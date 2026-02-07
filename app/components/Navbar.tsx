@@ -25,5 +25,8 @@ export default async function Navbar() {
     }
   }
 
+  // Hide navbar on landing page (not logged in)
+  if (!user) return null;
+
   return <NavbarClient user={user} isAdmin={isAdmin} />;
 }

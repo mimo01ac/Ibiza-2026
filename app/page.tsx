@@ -3,13 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import CountdownTimer from "./components/CountdownTimer";
 import ConfirmedParticipants from "./components/ConfirmedParticipants";
 import AllSections from "./components/sections/AllSections";
+import LandingPage from "./components/LandingPage";
 
 export default async function Home() {
-  let isAdmin = false;
+  const session = await auth();
 
+  // Not logged in — show landing page
+  if (!session?.user) {
+    return <LandingPage />;
+  }
+
+  let isAdmin = false;
   try {
-    const session = await auth();
-    if (session?.user?.email) {
+    if (session.user.email) {
       const supabase = await createClient();
       const { data: profile } = await supabase
         .from("profiles")
@@ -23,7 +29,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4">
+    <div className="mx-auto max-w-6xl px-4 pt-16">
       {/* Hero section */}
       <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center">
         {/* Background glow effects */}
