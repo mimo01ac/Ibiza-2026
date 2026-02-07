@@ -1,9 +1,3 @@
-export interface ClubConfig {
-  name: string;
-  urls: string[];
-  aiHints: string;
-}
-
 export interface ScrapedEvent {
   title: string;
   club: string;

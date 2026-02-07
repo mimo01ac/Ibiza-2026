@@ -1,11 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CLUBS } from "./clubs";
+import { SPOTLIGHT_URLS } from "./clubs";
 import { parseEventsWithAI } from "./ai-parser";
-import type { ClubConfig, ScrapeResult, ScrapeRunSummary } from "./types";
+import type { ScrapedEvent, ScrapeResult, ScrapeRunSummary } from "./types";
 
 const FETCH_TIMEOUT = 15_000;
 const BOT_EMAIL = "bot@ibiza-scraper.internal";
-const DELAY_BETWEEN_CLUBS_MS = 5_000;
+const DELAY_BETWEEN_PAGES_MS = 5_000;
 
 /**
  * Get or create the bot profile used as created_by for scraped events.
@@ -36,7 +36,7 @@ async function getOrCreateBotProfile(): Promise<string> {
 }
 
 /**
- * Fetch HTML from a URL with timeout and basic error handling.
+ * Fetch HTML from a URL with timeout.
  */
 async function fetchHtml(url: string): Promise<string> {
   const controller = new AbortController();
@@ -63,42 +63,50 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 /**
- * Scrape a single club — try each URL until one succeeds.
+ * Scrape Ibiza Spotlight calendar pages and parse events with AI.
  */
-async function scrapeClub(club: ClubConfig): Promise<ScrapeResult> {
-  for (const url of club.urls) {
+async function scrapeSpotlight(): Promise<ScrapeResult[]> {
+  const allEvents: ScrapedEvent[] = [];
+  const errors: string[] = [];
+
+  for (let i = 0; i < SPOTLIGHT_URLS.length; i++) {
+    const url = SPOTLIGHT_URLS[i];
     try {
       const html = await fetchHtml(url);
-      const events = await parseEventsWithAI(html, club);
-      return { club: club.name, events };
+      const events = await parseEventsWithAI(html);
+      allEvents.push(...events);
     } catch (err) {
-      // If this isn't the last URL, try the next one
-      if (url !== club.urls[club.urls.length - 1]) continue;
-      return {
-        club: club.name,
-        events: [],
-        error: err instanceof Error ? err.message : String(err),
-      };
+      errors.push(
+        `${url}: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
+    // Delay between pages to respect rate limits
+    if (i < SPOTLIGHT_URLS.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_PAGES_MS));
     }
   }
 
-  return { club: club.name, events: [], error: "No URLs configured" };
-}
+  // Group events by club for the summary
+  const byClub = new Map<string, ScrapedEvent[]>();
+  for (const event of allEvents) {
+    const existing = byClub.get(event.club) ?? [];
+    existing.push(event);
+    byClub.set(event.club, existing);
+  }
 
-/**
- * Process clubs sequentially with a delay to respect API rate limits.
- */
-async function scrapeAllClubs(): Promise<ScrapeResult[]> {
   const results: ScrapeResult[] = [];
+  for (const [club, events] of byClub) {
+    results.push({ club, events });
+  }
 
-  for (let i = 0; i < CLUBS.length; i++) {
-    const result = await scrapeClub(CLUBS[i]);
-    results.push(result);
-
-    // Delay between clubs to avoid Anthropic rate limits (50k tokens/min)
-    if (i < CLUBS.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_CLUBS_MS));
-    }
+  // Add error entry if any page failed
+  if (errors.length > 0) {
+    results.push({
+      club: "ibiza-spotlight",
+      events: [],
+      error: errors.join("; "),
+    });
   }
 
   return results;
@@ -115,7 +123,6 @@ async function insertNewEvents(
   const supabase = createAdminClient();
   let totalInserted = 0;
 
-  // Collect all scraped events
   const allEvents = results.flatMap((r) => r.events);
   if (allEvents.length === 0) return 0;
 
@@ -131,7 +138,6 @@ async function insertNewEvents(
     )
   );
 
-  // Filter to only new events
   const newEvents = allEvents.filter((e) => {
     const key = `${e.title.toLowerCase().trim()}|${e.date}|${e.club.toLowerCase().trim()}`;
     return !existingKeys.has(key);
@@ -173,13 +179,8 @@ async function insertNewEvents(
 export async function runScrapeJob(): Promise<ScrapeRunSummary> {
   const startedAt = new Date().toISOString();
 
-  // Step 1: Ensure bot profile exists
   const botProfileId = await getOrCreateBotProfile();
-
-  // Step 2: Scrape all clubs
-  const results = await scrapeAllClubs();
-
-  // Step 3: Insert new events (deduplicated)
+  const results = await scrapeSpotlight();
   const totalNewEvents = await insertNewEvents(results, botProfileId);
 
   return {

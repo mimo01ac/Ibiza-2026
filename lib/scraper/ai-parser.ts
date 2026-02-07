@@ -1,4 +1,4 @@
-import type { ClubConfig, ScrapedEvent } from "./types";
+import type { ScrapedEvent } from "./types";
 
 const MAX_HTML_LENGTH = 40_000;
 const TRIP_START = "2026-06-27";
@@ -21,7 +21,6 @@ export function preprocessHtml(html: string): string {
   cleaned = cleaned.replace(
     /<script[\s\S]*?<\/script>/gi,
     (match) => {
-      // Keep scripts with JSON-LD, __NUXT__, dataLayer, or inline JSON data
       if (
         /application\/ld\+json/i.test(match) ||
         /__NUXT__/i.test(match) ||
@@ -50,11 +49,10 @@ export function preprocessHtml(html: string): string {
 }
 
 /**
- * Call Claude Haiku to extract structured event data from HTML.
+ * Call Claude Haiku to extract structured event data from an Ibiza Spotlight calendar page.
  */
 export async function parseEventsWithAI(
-  html: string,
-  club: ClubConfig
+  html: string
 ): Promise<ScrapedEvent[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
@@ -71,28 +69,27 @@ export async function parseEventsWithAI(
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 4096,
-      system: `You are an event data extractor. Given HTML from the club "${club.name}", extract all upcoming 2026 events into a JSON array.
+      system: `You are an event data extractor. Given HTML from the Ibiza Spotlight party calendar, extract ALL events into a JSON array.
 
 Each event object must have these fields:
-- "title": string (event/party name, include headliner DJ names)
-- "club": "${club.name}" (always use this exact string)
-- "date": string in YYYY-MM-DD format (only 2026 dates)
-- "time": string or null (e.g. "23:00", "22:00 - 06:00")
-- "description": string or null (short description, lineup details)
-- "ticket_url": string or null (full URL to buy tickets)
+- "title": string (event/party name, include headliner DJ names if listed)
+- "club": string (the venue/club name exactly as shown, e.g. "Ushuaïa Ibiza", "Hï Ibiza", "Amnesia", "Pacha Ibiza", "UNVRS", "Chinois Ibiza")
+- "date": string in YYYY-MM-DD format
+- "time": string or null (e.g. "23:30", "17:00-23:00")
+- "description": string or null (lineup details, any extra info)
+- "ticket_url": string or null (full URL to buy tickets if available)
 
 Rules:
-- ONLY include events between ${TRIP_START} and ${TRIP_END} (our trip dates)
-- Skip all events outside this date range
-- If a date is ambiguous, prefer DD/MM/YYYY (European format)
+- ONLY include events between ${TRIP_START} and ${TRIP_END}
+- Extract EVERY event you can find — do not skip any
+- The page groups events by venue. Use the venue heading as the "club" field
+- Dates are shown in European format (e.g. "Sat 27 Jun" = 2026-06-27)
 - Return ONLY the JSON array, no markdown, no explanation
-- If no events found, return []
-
-Hints for this site: ${club.aiHints}`,
+- If no events found, return []`,
       messages: [
         {
           role: "user",
-          content: `Extract 2026 events from this HTML:\n\n${processedHtml}`,
+          content: `Extract all events from this Ibiza Spotlight calendar page:\n\n${processedHtml}`,
         },
       ],
     }),
@@ -106,17 +103,13 @@ Hints for this site: ${club.aiHints}`,
   const data = await response.json();
   const text: string = data.content?.[0]?.text ?? "[]";
 
-  return extractAndValidateEvents(text, club.name);
+  return extractAndValidateEvents(text);
 }
 
 /**
  * Extract JSON array from AI response and validate each event.
  */
-function extractAndValidateEvents(
-  text: string,
-  clubName: string
-): ScrapedEvent[] {
-  // Try to find a JSON array in the response
+function extractAndValidateEvents(text: string): ScrapedEvent[] {
   const arrayMatch = text.match(/\[[\s\S]*\]/);
   if (!arrayMatch) return [];
 
@@ -134,15 +127,14 @@ function extractAndValidateEvents(
       if (typeof item !== "object" || item === null) return false;
       const e = item as Record<string, unknown>;
 
-      // Must have title and date
       if (typeof e.title !== "string" || !e.title.trim()) return false;
+      if (typeof e.club !== "string" || !e.club.trim()) return false;
       if (typeof e.date !== "string") return false;
 
       // Date must be valid YYYY-MM-DD within trip dates
       if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return false;
       if (e.date < TRIP_START || e.date > TRIP_END) return false;
 
-      // Validate date is actually valid
       const d = new Date(e.date + "T00:00:00Z");
       if (isNaN(d.getTime())) return false;
 
@@ -150,7 +142,7 @@ function extractAndValidateEvents(
     })
     .map((e) => ({
       title: (e.title as string).trim(),
-      club: clubName,
+      club: (e.club as string).trim(),
       date: e.date as string,
       time: typeof e.time === "string" ? e.time.trim() || null : null,
       description:
