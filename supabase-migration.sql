@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
 CREATE INDEX IF NOT EXISTS idx_events_created_by ON events(created_by);
 
+-- Deduplication index for scraper (prevents duplicate events by title+date+club)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_dedup
+ON events (lower(trim(title)), date, lower(trim(club)));
+
 -- ============================================
 -- 3. EVENT VOTES TABLE
 -- ============================================
