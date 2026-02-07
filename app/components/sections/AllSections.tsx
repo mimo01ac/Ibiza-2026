@@ -15,8 +15,8 @@ interface AllSectionsProps {
 export default function AllSections({ isAdmin }: AllSectionsProps) {
   return (
     <>
-      <ScheduleSection isAdmin={isAdmin} />
       <WildcardsSection />
+      <ScheduleSection isAdmin={isAdmin} />
       <DjSection isAdmin={isAdmin} />
       <FlightsSection />
       <RoomsSection isAdmin={isAdmin} />

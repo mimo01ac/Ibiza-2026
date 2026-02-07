@@ -48,7 +48,7 @@ export default function WildcardsSection() {
 
   return (
     <section id="wildcards" className="scroll-mt-20 py-16">
-      <PageHeader title="WILDCARDS" subtitle="Trip ideas — vote for your favorites" color="cyan" />
+      <PageHeader title="EVENTS" subtitle="Trip ideas — vote for your favorites" color="cyan" />
 
       <div className="mb-6 text-center">
         <button

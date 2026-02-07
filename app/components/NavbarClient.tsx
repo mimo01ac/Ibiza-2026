@@ -6,8 +6,8 @@ import SignInButton from "./SignInButton";
 import SignOutButton from "./SignOutButton";
 
 const NAV_LINKS = [
+  { label: "Events", href: "#wildcards" },
   { label: "Schedule", href: "#schedule" },
-  { label: "Wildcards", href: "#wildcards" },
   { label: "DJ", href: "#dj" },
   { label: "Flights", href: "#flights" },
   { label: "Rooms", href: "#rooms" },
