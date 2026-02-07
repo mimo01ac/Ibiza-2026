@@ -15,6 +15,10 @@ const TAXI_INFO = [
   { destination: "Santa Eulalia", time: "~10 min", distance: "7 km" },
 ];
 
+const VILLA_PHOTOS = [
+  { src: "/villa/poolside.jpg", alt: "Poolside vibes at Casa Olivo" },
+];
+
 export default function VillaSection() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -30,7 +34,35 @@ export default function VillaSection() {
     <section id="villa" className="scroll-mt-20 py-16">
       <PageHeader title="CASA OLIVO" subtitle="Your home base in Ibiza" color="yellow" />
 
-      <div className="grid gap-8 md:grid-cols-2">
+      {/* Villa photo gallery */}
+      {(() => {
+        const allPhotos = [
+          ...VILLA_PHOTOS.map((p) => ({ url: p.src, alt: p.alt })),
+          ...photos.map((url, i) => ({ url, alt: `Villa photo ${i + 1}` })),
+        ];
+        if (allPhotos.length === 0) return null;
+        return (
+          <div className="mb-8 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+            {allPhotos.map((photo, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedPhoto(photo.url)}
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--border)]"
+              >
+                <Image
+                  src={photo.url}
+                  alt={photo.alt}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Info cards */}
         <div className="space-y-4">
           <div className="rounded-xl border border-[var(--border)] bg-surface p-4">
@@ -91,31 +123,6 @@ export default function VillaSection() {
           </div>
         </div>
       </div>
-
-      {/* Villa photos */}
-      {photos.length > 0 && (
-        <div className="mt-8">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-            Villa Photos
-          </h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {photos.map((url, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedPhoto(url)}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--border)]"
-              >
-                <Image
-                  src={url}
-                  alt={`Villa photo ${i + 1}`}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <Modal open={!!selectedPhoto} onClose={() => setSelectedPhoto(null)}>
         {selectedPhoto && (
