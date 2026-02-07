@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { createClient } from "@/lib/supabase/server";
 import CountdownTimer from "./components/CountdownTimer";
+import ConfirmedParticipants from "./components/ConfirmedParticipants";
 import AllSections from "./components/sections/AllSections";
 
 export default async function Home() {
@@ -56,6 +57,9 @@ export default async function Home() {
           </p>
         </div>
       </div>
+
+      {/* Confirmed participants */}
+      <ConfirmedParticipants />
 
       {/* All feature sections */}
       <AllSections isAdmin={isAdmin} />

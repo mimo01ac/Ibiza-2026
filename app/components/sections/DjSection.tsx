@@ -21,7 +21,9 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [introPlayed, setIntroPlayed] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const spotifyRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     fetch("/api/dj-media")
@@ -32,6 +34,41 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
       })
       .catch(() => {});
   }, []);
+
+  // Autoplay dicosis-intro.mp3 once on first load
+  useEffect(() => {
+    if (introPlayed || tracks.length === 0) return;
+    const introIndex = tracks.findIndex((t) =>
+      t.name.toLowerCase().includes("dicosis-intro")
+    );
+    if (introIndex === -1) return;
+    setIntroPlayed(true);
+    setCurrentTrack(introIndex);
+    setIsPlaying(true);
+    if (audioRef.current) {
+      audioRef.current.src = tracks[introIndex].url;
+      audioRef.current.play().catch(() => {
+        // Browser may block autoplay without user gesture
+        setIsPlaying(false);
+      });
+    }
+  }, [tracks, introPlayed]);
+
+  // Pause local audio when Spotify iframe gains focus
+  useEffect(() => {
+    const handleBlur = () => {
+      if (
+        document.activeElement === spotifyRef.current &&
+        isPlaying &&
+        audioRef.current
+      ) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, [isPlaying]);
 
   const playTrack = (index: number) => {
     if (currentTrack === index && isPlaying) {
@@ -71,6 +108,44 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
   return (
     <section id="dj" className="scroll-mt-20 py-16">
       <PageHeader title="DJ DICOSIS" subtitle="Beats to fuel the trip" color="purple" />
+
+      {/* Artist bio + Spotify embed */}
+      <div className="mb-10 rounded-xl border border-[var(--border)] bg-surface p-6">
+        <div className="mb-6">
+          <h3 className="mb-2 text-lg font-bold text-white">Lars Vinder</h3>
+          <p className="text-sm leading-relaxed text-gray-400">
+            The man behind Dicosis — bringing deep house, melodic techno, and
+            Ibiza-ready energy to the villa. Expect sunset sessions, poolside
+            mixes, and late-night bangers.
+          </p>
+          <a
+            href="https://dicosismusic.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-neon-purple/50 bg-neon-purple/10 px-5 py-2 text-sm font-semibold text-neon-purple transition-colors hover:bg-neon-purple/20"
+          >
+            Visit Official Dicosis Website
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          </a>
+        </div>
+
+        {/* Spotify embed */}
+        <div className="overflow-hidden rounded-xl">
+          <iframe
+            ref={spotifyRef}
+            src="https://open.spotify.com/embed/artist/5LInC5fX2T4w6z7X2m9GfS"
+            width="100%"
+            height="352"
+            frameBorder="0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            className="rounded-xl"
+            title="Dicosis on Spotify"
+          />
+        </div>
+      </div>
 
       {isAdmin && (
         <div className="mb-6 text-center">
