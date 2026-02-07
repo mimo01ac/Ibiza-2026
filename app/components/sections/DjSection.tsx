@@ -107,16 +107,16 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
 
   return (
     <section id="dj" className="scroll-mt-20 py-16">
-      <PageHeader title="DJ DICOSIS" subtitle="Beats to fuel the trip" color="purple" />
+      <PageHeader title="VILLA DJ" subtitle="Beats to fuel the trip" color="purple" />
 
       {/* Artist bio + Spotify embed */}
       <div className="mb-10 rounded-xl border border-[var(--border)] bg-surface p-6">
         <div className="mb-6">
-          <h3 className="mb-2 text-lg font-bold text-white">Lars Vinder</h3>
+          <h3 className="mb-2 text-lg font-bold text-white">Lars Vinter</h3>
           <p className="text-sm leading-relaxed text-gray-400">
-            The man behind Dicosis — bringing deep house, melodic techno, and
-            Ibiza-ready energy to the villa. Expect sunset sessions, poolside
-            mixes, and late-night bangers.
+            Lars Vinter is the man behind the decks. As one half of the trance
+            duo Dicosis, he is the guy ensuring the right beats and juicy tones
+            in the villa all week.
           </p>
           <a
             href="https://dicosismusic.com/"
@@ -135,10 +135,11 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
         <div className="overflow-hidden rounded-xl">
           <iframe
             ref={spotifyRef}
-            src="https://open.spotify.com/embed/artist/5LInC5fX2T4w6z7X2m9GfS"
+            src="https://open.spotify.com/embed/artist/5LInC5fX2T4w6z7X2m9GfS?utm_source=generator&theme=0"
             width="100%"
             height="352"
             frameBorder="0"
+            allowFullScreen
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
             className="rounded-xl"
