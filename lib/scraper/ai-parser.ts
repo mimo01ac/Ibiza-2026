@@ -1,6 +1,6 @@
 import type { ScrapedEvent } from "./types";
 
-const MAX_HTML_LENGTH = 40_000;
+const MAX_HTML_LENGTH = 80_000;
 const TRIP_START = "2026-06-27";
 const TRIP_END = "2026-07-03";
 
@@ -36,6 +36,19 @@ export function preprocessHtml(html: string): string {
 
   // Remove SVG content
   cleaned = cleaned.replace(/<svg[\s\S]*?<\/svg>/gi, "");
+
+  // Remove nav, header, footer elements
+  cleaned = cleaned.replace(/<nav[\s\S]*?<\/nav>/gi, "");
+  cleaned = cleaned.replace(/<header[\s\S]*?<\/header>/gi, "");
+  cleaned = cleaned.replace(/<footer[\s\S]*?<\/footer>/gi, "");
+
+  // Remove image tags (save tokens, not needed for event data)
+  cleaned = cleaned.replace(/<img[^>]*>/gi, "");
+
+  // Remove all HTML attributes except href (save tokens)
+  cleaned = cleaned.replace(/<([a-z][a-z0-9]*)\s[^>]*?(href="[^"]*")?[^>]*?>/gi,
+    (_, tag, href) => href ? `<${tag} ${href}>` : `<${tag}>`
+  );
 
   // Collapse whitespace
   cleaned = cleaned.replace(/\s{2,}/g, " ");
