@@ -10,6 +10,8 @@ interface Track {
   url: string;
 }
 
+const STATIC_PHOTOS = ["/dj/lars-vinter.png", "/dj/studio.webp"];
+
 interface DjSectionProps {
   isAdmin: boolean;
 }
@@ -164,9 +166,9 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
       )}
 
       {/* Photo gallery */}
-      {photos.length > 0 && (
+      {(STATIC_PHOTOS.length > 0 || photos.length > 0) && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {photos.map((url, i) => (
+          {[...STATIC_PHOTOS, ...photos].map((url, i) => (
             <button
               key={i}
               onClick={() => setSelectedPhoto(url)}
