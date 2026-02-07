@@ -168,7 +168,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         </div>
       )}
 
-      {/* Events list — ranked by votes, top-voted highlighted */}
+      {/* Events — mobile: ranked list, desktop: card grid */}
       {(() => {
         const MOBILE_DEFAULT = 3;
         const isExpanded = activeDay ? expandedDays.has(activeDay) : false;
@@ -176,17 +176,73 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
 
         return (
           <>
-            <div className="space-y-2">
+            {/* ── Desktop grid ── */}
+            <div className="hidden gap-3 md:grid md:grid-cols-3 lg:grid-cols-4">
               {dayEvents.map((event, idx) => (
                 <div
                   key={event.id}
-                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                  className={`rounded-xl border p-3 ${
                     idx === 0 && event.vote_count > 0
                       ? "border-neon-pink/40 bg-neon-pink/5"
                       : "border-[var(--border)] bg-surface"
-                  } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden md:flex" : ""}`}
+                  }`}
                 >
-                  {/* Vote button on the left */}
+                  {idx === 0 && event.vote_count > 0 && (
+                    <span className="mb-1.5 inline-block text-xs text-neon-pink">★ Top pick</span>
+                  )}
+                  <h4 className="text-sm font-semibold leading-tight text-foreground">
+                    {event.title}
+                  </h4>
+                  <p className="mt-0.5 text-xs text-neon-cyan">{event.club}</p>
+                  {event.time && (
+                    <p className="text-xs text-gray-500">{event.time}</p>
+                  )}
+                  {event.description && (
+                    <p className="mt-1 line-clamp-2 text-xs text-gray-400">{event.description}</p>
+                  )}
+                  <div className="mt-2 flex items-center gap-2">
+                    <VoteButton
+                      entityId={event.id}
+                      initialCount={event.vote_count}
+                      initialVoted={event.user_voted}
+                      apiEndpoint="/api/events"
+                    />
+                    {event.ticket_url && (
+                      <a
+                        href={event.ticket_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-neon-purple/30 px-2 py-1 text-xs text-neon-purple transition-colors hover:bg-neon-purple/10"
+                      >
+                        Tickets
+                      </a>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="ml-auto rounded p-1 text-gray-600 hover:text-red-400"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Mobile list ── */}
+            <div className="space-y-2 md:hidden">
+              {dayEvents.map((event, idx) => (
+                <div
+                  key={event.id}
+                  className={`flex items-center gap-3 rounded-xl border p-3 ${
+                    idx === 0 && event.vote_count > 0
+                      ? "border-neon-pink/40 bg-neon-pink/5"
+                      : "border-[var(--border)] bg-surface"
+                  } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden" : ""}`}
+                >
                   <div className="shrink-0">
                     <VoteButton
                       entityId={event.id}
@@ -195,8 +251,6 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                       apiEndpoint="/api/events"
                     />
                   </div>
-
-                  {/* Event info */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="truncate text-sm font-semibold text-foreground">
@@ -214,8 +268,6 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                       <p className="mt-1 line-clamp-1 text-xs text-gray-400">{event.description}</p>
                     )}
                   </div>
-
-                  {/* Actions on the right */}
                   <div className="flex shrink-0 items-center gap-2">
                     {event.ticket_url && (
                       <a
