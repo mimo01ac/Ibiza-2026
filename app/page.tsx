@@ -59,6 +59,13 @@ export default async function Home() {
 
       {/* All feature sections */}
       <AllSections isAdmin={isAdmin} />
+
+      {/* Footer */}
+      <footer className="border-t border-[var(--border)] py-8 text-center text-xs text-gray-600">
+        <a href="/privacy" className="hover:text-gray-400 transition-colors">
+          Privacy Policy
+        </a>
+      </footer>
     </div>
   );
 }
