@@ -16,17 +16,22 @@ export default function LandingPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      name: guestName.trim(),
-      password: guestPassword,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        name: guestName.trim(),
+        password: guestPassword,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Wrong password or missing name");
+      if (result?.error || result?.ok === false) {
+        setError("Wrong password or missing name");
+        setLoading(false);
+      } else {
+        window.location.href = "/";
+      }
+    } catch {
+      setError("Login failed — please try again");
       setLoading(false);
-    } else {
-      window.location.href = "/";
     }
   };
 
