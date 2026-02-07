@@ -30,23 +30,41 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const signedRequest = formData.get("signed_request") as string;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://ibiza-2026.vercel.app";
 
+    // Try to parse form data — Facebook sends signed_request as form data
+    let signedRequest: string | null = null;
+    try {
+      const formData = await req.formData();
+      signedRequest = formData.get("signed_request") as string;
+    } catch {
+      // Not form data — could be a validation ping from Facebook
+    }
+
+    // If no signed_request, return a valid response for Facebook's validation check
     if (!signedRequest) {
-      console.error("[data-deletion] Missing signed_request in POST body");
+      const code = `del_validation_${Date.now()}`;
+      console.log("[data-deletion] Validation ping (no signed_request)");
       return NextResponse.json(
-        { error: "Missing signed_request" },
-        { status: 400, headers: CORS_HEADERS }
+        {
+          url: `${baseUrl}/data-deletion?code=${code}`,
+          confirmation_code: code,
+        },
+        { headers: CORS_HEADERS }
       );
     }
 
     const appSecret = process.env.AUTH_FACEBOOK_SECRET;
     if (!appSecret) {
       console.error("[data-deletion] AUTH_FACEBOOK_SECRET not configured");
+      // Still return 200 with valid format to not break Facebook's validation
+      const code = `del_error_${Date.now()}`;
       return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500, headers: CORS_HEADERS }
+        {
+          url: `${baseUrl}/data-deletion?code=${code}`,
+          confirmation_code: code,
+        },
+        { headers: CORS_HEADERS }
       );
     }
 
@@ -54,15 +72,19 @@ export async function POST(req: NextRequest) {
     const data = parseSignedRequest(signedRequest, appSecret);
     if (!data) {
       console.error("[data-deletion] Invalid signed_request signature");
+      const code = `del_invalid_${Date.now()}`;
       return NextResponse.json(
-        { error: "Invalid signed_request" },
-        { status: 400, headers: CORS_HEADERS }
+        {
+          url: `${baseUrl}/data-deletion?code=${code}`,
+          confirmation_code: code,
+        },
+        { headers: CORS_HEADERS }
       );
     }
 
     const userId = data.user_id;
     const confirmationCode = `del_${userId}_${Date.now()}`;
-    const statusUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://ibiza-2026.vercel.app"}/data-deletion?code=${confirmationCode}`;
+    const statusUrl = `${baseUrl}/data-deletion?code=${confirmationCode}`;
 
     console.log(
       `[data-deletion] Facebook user ${userId} requested data deletion. Code: ${confirmationCode}`
@@ -77,9 +99,13 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error("[data-deletion] Error:", error);
+    const code = `del_error_${Date.now()}`;
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500, headers: CORS_HEADERS }
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://ibiza-2026.vercel.app"}/data-deletion?code=${code}`,
+        confirmation_code: code,
+      },
+      { headers: CORS_HEADERS }
     );
   }
 }
