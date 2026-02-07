@@ -149,17 +149,17 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         </form>
       )}
 
-      {/* Day tabs */}
+      {/* Day tabs — spread across full width on desktop */}
       {days.length > 0 && (
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 md:gap-0 md:overflow-visible">
           {days.map((day) => (
             <button
               key={day}
               onClick={() => setActiveDay(day)}
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors md:flex-1 md:rounded-none md:first:rounded-l-lg md:last:rounded-r-lg ${
                 activeDay === day
                   ? "bg-neon-pink/20 text-neon-pink neon-glow-pink"
-                  : "border border-[var(--border)] text-gray-400 hover:text-neon-pink"
+                  : "border border-[var(--border)] text-gray-400 hover:text-neon-pink md:border-x-0 md:border-y md:first:border-l md:last:border-r"
               }`}
             >
               {formatDate(day)}
@@ -168,53 +168,65 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         </div>
       )}
 
-      {/* Events grid: 4 cols desktop, 2 cols mobile (show 2 then expand) */}
+      {/* Events list — ranked by votes, top-voted highlighted */}
       {(() => {
-        const MOBILE_DEFAULT = 2;
+        const MOBILE_DEFAULT = 3;
         const isExpanded = activeDay ? expandedDays.has(activeDay) : false;
-        const visibleEvents = dayEvents.length > MOBILE_DEFAULT && !isExpanded
-          ? dayEvents.slice(0, MOBILE_DEFAULT)
-          : dayEvents;
         const hiddenCount = dayEvents.length - MOBILE_DEFAULT;
 
         return (
           <>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {/* On mobile, show limited; on desktop show all */}
+            <div className="space-y-2">
               {dayEvents.map((event, idx) => (
                 <div
                   key={event.id}
-                  className={`rounded-xl border border-[var(--border)] bg-surface p-3 ${
-                    idx >= MOBILE_DEFAULT && !isExpanded ? "hidden md:block" : ""
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    idx === 0 && event.vote_count > 0
+                      ? "border-neon-pink/40 bg-neon-pink/5"
+                      : "border-[var(--border)] bg-surface"
+                  } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden md:flex" : ""}`}
                 >
-                  <h4 className="text-sm font-semibold leading-tight text-foreground">
-                    {event.title}
-                  </h4>
-                  <p className="mt-0.5 text-xs text-neon-cyan">{event.club}</p>
-                  {event.time && (
-                    <p className="text-xs text-gray-500">{event.time}</p>
-                  )}
-                  {event.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-400">{event.description}</p>
-                  )}
-                  {event.ticket_url && (
-                    <a
-                      href={event.ticket_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-block text-xs text-neon-purple hover:underline"
-                    >
-                      Tickets
-                    </a>
-                  )}
-                  <div className="mt-2 flex items-center gap-1">
+                  {/* Vote button on the left */}
+                  <div className="shrink-0">
                     <VoteButton
                       entityId={event.id}
                       initialCount={event.vote_count}
                       initialVoted={event.user_voted}
                       apiEndpoint="/api/events"
                     />
+                  </div>
+
+                  {/* Event info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="truncate text-sm font-semibold text-foreground">
+                        {event.title}
+                      </h4>
+                      {idx === 0 && event.vote_count > 0 && (
+                        <span className="shrink-0 text-xs text-neon-pink">★ Top pick</span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                      <span className="text-neon-cyan">{event.club}</span>
+                      {event.time && <span className="text-gray-500">{event.time}</span>}
+                    </div>
+                    {event.description && (
+                      <p className="mt-1 line-clamp-1 text-xs text-gray-400">{event.description}</p>
+                    )}
+                  </div>
+
+                  {/* Actions on the right */}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {event.ticket_url && (
+                      <a
+                        href={event.ticket_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-neon-purple/30 px-2 py-1 text-xs text-neon-purple transition-colors hover:bg-neon-purple/10"
+                      >
+                        Tickets
+                      </a>
+                    )}
                     {isAdmin && (
                       <button
                         onClick={() => handleDelete(event.id)}
