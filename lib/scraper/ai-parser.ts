@@ -1,6 +1,8 @@
 import type { ClubConfig, ScrapedEvent } from "./types";
 
 const MAX_HTML_LENGTH = 40_000;
+const TRIP_START = "2026-06-27";
+const TRIP_END = "2026-07-04";
 
 /**
  * Strip styles, scripts (except data-bearing ones), and HTML comments.
@@ -80,8 +82,8 @@ Each event object must have these fields:
 - "ticket_url": string or null (full URL to buy tickets)
 
 Rules:
-- Only include events in 2026
-- Skip past events
+- ONLY include events between ${TRIP_START} and ${TRIP_END} (our trip dates)
+- Skip all events outside this date range
 - If a date is ambiguous, prefer DD/MM/YYYY (European format)
 - Return ONLY the JSON array, no markdown, no explanation
 - If no events found, return []
@@ -136,9 +138,9 @@ function extractAndValidateEvents(
       if (typeof e.title !== "string" || !e.title.trim()) return false;
       if (typeof e.date !== "string") return false;
 
-      // Date must be valid YYYY-MM-DD in 2026
+      // Date must be valid YYYY-MM-DD within trip dates
       if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return false;
-      if (!e.date.startsWith("2026-")) return false;
+      if (e.date < TRIP_START || e.date > TRIP_END) return false;
 
       // Validate date is actually valid
       const d = new Date(e.date + "T00:00:00Z");
