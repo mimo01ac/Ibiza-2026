@@ -149,172 +149,193 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         </form>
       )}
 
-      {/* Day tabs — spread across full width on desktop */}
+      {/* ── Desktop: all days as columns with events below ── */}
       {days.length > 0 && (
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 md:gap-0 md:overflow-visible">
-          {days.map((day) => (
-            <button
-              key={day}
-              onClick={() => setActiveDay(day)}
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors md:flex-1 md:rounded-none md:first:rounded-l-lg md:last:rounded-r-lg ${
-                activeDay === day
-                  ? "bg-neon-pink/20 text-neon-pink neon-glow-pink"
-                  : "border border-[var(--border)] text-gray-400 hover:text-neon-pink md:border-x-0 md:border-y md:first:border-l md:last:border-r"
-              }`}
-            >
-              {formatDate(day)}
-            </button>
-          ))}
+        <div
+          className="hidden md:grid gap-3"
+          style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}
+        >
+          {days.map((day) => {
+            const evts = events
+              .filter((e) => e.date === day)
+              .sort((a, b) => b.vote_count - a.vote_count);
+            return (
+              <div key={day} className="min-w-0">
+                {/* Date header */}
+                <div className="mb-3 rounded-lg bg-neon-pink/10 px-3 py-2 text-center text-sm font-semibold text-neon-pink">
+                  {formatDate(day)}
+                </div>
+                {/* Event cards stacked */}
+                <div className="space-y-2">
+                  {evts.map((event, idx) => (
+                    <div
+                      key={event.id}
+                      className={`rounded-xl border p-2.5 ${
+                        idx === 0 && event.vote_count > 0
+                          ? "border-neon-pink/40 bg-neon-pink/5"
+                          : "border-[var(--border)] bg-surface"
+                      }`}
+                    >
+                      {idx === 0 && event.vote_count > 0 && (
+                        <span className="mb-1 inline-block text-[10px] text-neon-pink">★ Top pick</span>
+                      )}
+                      <h4 className="text-xs font-semibold leading-tight text-foreground">
+                        {event.title}
+                      </h4>
+                      <p className="mt-0.5 text-[10px] text-neon-cyan">{event.club}</p>
+                      {event.time && (
+                        <p className="text-[10px] text-gray-500">{event.time}</p>
+                      )}
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <VoteButton
+                          entityId={event.id}
+                          initialCount={event.vote_count}
+                          initialVoted={event.user_voted}
+                          apiEndpoint="/api/events"
+                        />
+                        {event.ticket_url && (
+                          <a
+                            href={event.ticket_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded border border-neon-purple/30 px-1.5 py-0.5 text-[10px] text-neon-purple transition-colors hover:bg-neon-purple/10"
+                          >
+                            Tickets
+                          </a>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(event.id)}
+                            className="ml-auto rounded p-0.5 text-gray-600 hover:text-red-400"
+                          >
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {evts.length === 0 && (
+                    <p className="py-4 text-center text-xs text-gray-600">No events</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Events — mobile: ranked list, desktop: card grid */}
-      {(() => {
-        const MOBILE_DEFAULT = 3;
-        const isExpanded = activeDay ? expandedDays.has(activeDay) : false;
-        const hiddenCount = dayEvents.length - MOBILE_DEFAULT;
+      {/* ── Mobile: day tabs + ranked list ── */}
+      <div className="md:hidden">
+        {days.length > 0 && (
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+            {days.map((day) => (
+              <button
+                key={day}
+                onClick={() => setActiveDay(day)}
+                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  activeDay === day
+                    ? "bg-neon-pink/20 text-neon-pink neon-glow-pink"
+                    : "border border-[var(--border)] text-gray-400 hover:text-neon-pink"
+                }`}
+              >
+                {formatDate(day)}
+              </button>
+            ))}
+          </div>
+        )}
 
-        return (
-          <>
-            {/* ── Desktop grid ── */}
-            <div className="hidden gap-3 md:grid md:grid-cols-3 lg:grid-cols-4">
-              {dayEvents.map((event, idx) => (
-                <div
-                  key={event.id}
-                  className={`rounded-xl border p-3 ${
-                    idx === 0 && event.vote_count > 0
-                      ? "border-neon-pink/40 bg-neon-pink/5"
-                      : "border-[var(--border)] bg-surface"
-                  }`}
-                >
-                  {idx === 0 && event.vote_count > 0 && (
-                    <span className="mb-1.5 inline-block text-xs text-neon-pink">★ Top pick</span>
-                  )}
-                  <h4 className="text-sm font-semibold leading-tight text-foreground">
-                    {event.title}
-                  </h4>
-                  <p className="mt-0.5 text-xs text-neon-cyan">{event.club}</p>
-                  {event.time && (
-                    <p className="text-xs text-gray-500">{event.time}</p>
-                  )}
-                  {event.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-400">{event.description}</p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2">
-                    <VoteButton
-                      entityId={event.id}
-                      initialCount={event.vote_count}
-                      initialVoted={event.user_voted}
-                      apiEndpoint="/api/events"
-                    />
-                    {event.ticket_url && (
-                      <a
-                        href={event.ticket_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-md border border-neon-purple/30 px-2 py-1 text-xs text-neon-purple transition-colors hover:bg-neon-purple/10"
-                      >
-                        Tickets
-                      </a>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        className="ml-auto rounded p-1 text-gray-600 hover:text-red-400"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {(() => {
+          const MOBILE_DEFAULT = 3;
+          const isExpanded = activeDay ? expandedDays.has(activeDay) : false;
+          const hiddenCount = dayEvents.length - MOBILE_DEFAULT;
 
-            {/* ── Mobile list ── */}
-            <div className="space-y-2 md:hidden">
-              {dayEvents.map((event, idx) => (
-                <div
-                  key={event.id}
-                  className={`flex items-center gap-3 rounded-xl border p-3 ${
-                    idx === 0 && event.vote_count > 0
-                      ? "border-neon-pink/40 bg-neon-pink/5"
-                      : "border-[var(--border)] bg-surface"
-                  } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden" : ""}`}
-                >
-                  <div className="shrink-0">
-                    <VoteButton
-                      entityId={event.id}
-                      initialCount={event.vote_count}
-                      initialVoted={event.user_voted}
-                      apiEndpoint="/api/events"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="truncate text-sm font-semibold text-foreground">
-                        {event.title}
-                      </h4>
-                      {idx === 0 && event.vote_count > 0 && (
-                        <span className="shrink-0 text-xs text-neon-pink">★ Top pick</span>
+          return (
+            <>
+              <div className="space-y-2">
+                {dayEvents.map((event, idx) => (
+                  <div
+                    key={event.id}
+                    className={`flex items-center gap-3 rounded-xl border p-3 ${
+                      idx === 0 && event.vote_count > 0
+                        ? "border-neon-pink/40 bg-neon-pink/5"
+                        : "border-[var(--border)] bg-surface"
+                    } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden" : ""}`}
+                  >
+                    <div className="shrink-0">
+                      <VoteButton
+                        entityId={event.id}
+                        initialCount={event.vote_count}
+                        initialVoted={event.user_voted}
+                        apiEndpoint="/api/events"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="truncate text-sm font-semibold text-foreground">
+                          {event.title}
+                        </h4>
+                        {idx === 0 && event.vote_count > 0 && (
+                          <span className="shrink-0 text-xs text-neon-pink">★ Top pick</span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                        <span className="text-neon-cyan">{event.club}</span>
+                        {event.time && <span className="text-gray-500">{event.time}</span>}
+                      </div>
+                      {event.description && (
+                        <p className="mt-1 line-clamp-1 text-xs text-gray-400">{event.description}</p>
                       )}
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-                      <span className="text-neon-cyan">{event.club}</span>
-                      {event.time && <span className="text-gray-500">{event.time}</span>}
+                    <div className="flex shrink-0 items-center gap-2">
+                      {event.ticket_url && (
+                        <a
+                          href={event.ticket_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-md border border-neon-purple/30 px-2 py-1 text-xs text-neon-purple transition-colors hover:bg-neon-purple/10"
+                        >
+                          Tickets
+                        </a>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          className="rounded p-1 text-gray-600 hover:text-red-400"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                    {event.description && (
-                      <p className="mt-1 line-clamp-1 text-xs text-gray-400">{event.description}</p>
-                    )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {event.ticket_url && (
-                      <a
-                        href={event.ticket_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-md border border-neon-purple/30 px-2 py-1 text-xs text-neon-purple transition-colors hover:bg-neon-purple/10"
-                      >
-                        Tickets
-                      </a>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        className="rounded p-1 text-gray-600 hover:text-red-400"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Mobile expand button */}
-            {hiddenCount > 0 && activeDay && (
-              <button
-                onClick={() => {
-                  const next = new Set(expandedDays);
-                  if (isExpanded) next.delete(activeDay);
-                  else next.add(activeDay);
-                  setExpandedDays(next);
-                }}
-                className="mt-3 w-full rounded-lg border border-[var(--border)] py-2 text-center text-sm text-gray-400 transition-colors hover:text-neon-pink md:hidden"
-              >
-                {isExpanded ? "Show less" : `Show ${hiddenCount} more events`}
-              </button>
-            )}
-          </>
-        );
-      })()}
+              {hiddenCount > 0 && activeDay && (
+                <button
+                  onClick={() => {
+                    const next = new Set(expandedDays);
+                    if (isExpanded) next.delete(activeDay);
+                    else next.add(activeDay);
+                    setExpandedDays(next);
+                  }}
+                  className="mt-3 w-full rounded-lg border border-[var(--border)] py-2 text-center text-sm text-gray-400 transition-colors hover:text-neon-pink"
+                >
+                  {isExpanded ? "Show less" : `Show ${hiddenCount} more events`}
+                </button>
+              )}
 
-      {dayEvents.length === 0 && activeDay && (
-        <p className="text-center text-sm text-gray-600">No events for this day yet.</p>
-      )}
+              {dayEvents.length === 0 && activeDay && (
+                <p className="text-center text-sm text-gray-600">No events for this day yet.</p>
+              )}
+            </>
+          );
+        })()}
+      </div>
+
       {events.length === 0 && (
         <p className="text-center text-sm text-gray-600">No events added yet.</p>
       )}
