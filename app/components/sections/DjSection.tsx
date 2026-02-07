@@ -132,8 +132,8 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
         </a>
       </div>
 
-      {/* Two photos side by side: Lars (left) + Studio (right) */}
-      <div className="mb-6 grid grid-cols-2 gap-4">
+      {/* Two photos side by side: Lars 1/3 (left) + Studio 2/3 (right) */}
+      <div className="mb-6 grid grid-cols-3 gap-4">
         <button
           onClick={() => setSelectedPhoto("/dj/lars-vinter.png")}
           className="group relative overflow-hidden rounded-xl border border-[var(--border)]"
@@ -146,7 +146,7 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
             className="h-full w-full object-contain transition-transform group-hover:scale-105"
           />
         </button>
-        <div className="flex flex-col gap-4">
+        <div className="col-span-2 flex flex-col gap-4">
           <button
             onClick={() => setSelectedPhoto("/dj/studio.webp")}
             className="group relative aspect-square overflow-hidden rounded-xl border border-[var(--border)]"
