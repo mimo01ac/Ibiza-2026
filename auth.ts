@@ -16,8 +16,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const name = (credentials.name as string | undefined)?.trim();
-        const password = credentials.password as string | undefined;
+        if (!credentials) return null;
+
+        const name = String(credentials.name ?? "").trim();
+        const password = String(credentials.password ?? "");
 
         if (!name || !password) return null;
         if (password !== process.env.GUEST_PASSWORD) return null;
@@ -25,7 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const normalized = normalizeGuestName(name);
         return {
           id: `guest_${normalized}`,
-          name: name,
+          name,
           email: `guest_${normalized}@ibiza-2026.app`,
         };
       },
