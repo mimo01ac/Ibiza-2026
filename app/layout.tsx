@@ -12,6 +12,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Ibiza 2026",
   description: "The ultimate Ibiza trip portal - June 27, 2026",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
