@@ -136,13 +136,14 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
       <div className="mb-6 grid grid-cols-2 gap-4">
         <button
           onClick={() => setSelectedPhoto("/dj/lars-vinter.png")}
-          className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[var(--border)]"
+          className="group relative overflow-hidden rounded-xl border border-[var(--border)]"
         >
           <Image
             src="/dj/lars-vinter.png"
             alt="Lars Vinter"
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
+            width={400}
+            height={700}
+            className="h-full w-full object-contain transition-transform group-hover:scale-105"
           />
         </button>
         <div className="flex flex-col gap-4">
