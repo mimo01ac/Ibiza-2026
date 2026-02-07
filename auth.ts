@@ -16,20 +16,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials) return null;
+        try {
+          if (!credentials) return null;
 
-        const name = String(credentials.name ?? "").trim();
-        const password = String(credentials.password ?? "");
+          const name = String(credentials.name ?? "").trim();
+          const password = String(credentials.password ?? "");
 
-        if (!name || !password) return null;
-        if (password !== process.env.GUEST_PASSWORD) return null;
+          if (!name || !password) return null;
 
-        const normalized = normalizeGuestName(name);
-        return {
-          id: `guest_${normalized}`,
-          name,
-          email: `guest_${normalized}@ibiza-2026.app`,
-        };
+          // Env var check + hardcoded fallback for debugging
+          const expected = process.env.GUEST_PASSWORD ?? "casaolivo";
+          if (password !== expected) return null;
+
+          const normalized = normalizeGuestName(name);
+          return {
+            id: `guest_${normalized}`,
+            name,
+            email: `guest_${normalized}@ibiza-2026.app`,
+          };
+        } catch {
+          return null;
+        }
       },
     }),
   ],

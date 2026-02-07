@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import { guestLogin } from "@/app/actions/auth";
 
 export default function LandingPage() {
   const [guestName, setGuestName] = useState("");
@@ -16,23 +17,13 @@ export default function LandingPage() {
     setLoading(true);
     setError("");
 
-    try {
-      const result = await signIn("credentials", {
-        name: guestName.trim(),
-        password: guestPassword,
-        redirect: false,
-      });
+    const result = await guestLogin(guestName.trim(), guestPassword);
 
-      if (result?.error) {
-        setError("Wrong password — please try again");
-        setLoading(false);
-      } else {
-        window.location.href = "/";
-      }
-    } catch {
-      setError("Login failed — please try again");
+    if (result?.error) {
+      setError(result.error);
       setLoading(false);
     }
+    // On success, the server action redirects to "/" automatically
   };
 
   return (

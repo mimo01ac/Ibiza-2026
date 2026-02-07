@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { signIn } from "next-auth/react";
+import { guestLogin } from "@/app/actions/auth";
 
 export default function SignInButton() {
   const [open, setOpen] = useState(false);
@@ -28,23 +29,13 @@ export default function SignInButton() {
     setLoading(true);
     setError("");
 
-    try {
-      const result = await signIn("credentials", {
-        name: guestName.trim(),
-        password: guestPassword,
-        redirect: false,
-      });
+    const result = await guestLogin(guestName.trim(), guestPassword);
 
-      if (result?.error) {
-        setError("Wrong password — please try again");
-        setLoading(false);
-      } else {
-        window.location.href = "/";
-      }
-    } catch {
-      setError("Login failed — please try again");
+    if (result?.error) {
+      setError(result.error);
       setLoading(false);
     }
+    // On success, the server action redirects to "/" automatically
   };
 
   return (
