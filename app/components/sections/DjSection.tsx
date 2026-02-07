@@ -135,7 +135,7 @@ export default function DjSection({ isAdmin }: DjSectionProps) {
         <div className="overflow-hidden rounded-xl">
           <iframe
             ref={spotifyRef}
-            src="https://open.spotify.com/embed/artist/5LInC5fX2T4w6z7X2m9GfS?utm_source=generator&theme=0"
+            src="https://open.spotify.com/embed/artist/1OzaVbvTssplYwiAq5xq2V?utm_source=generator&theme=0"
             width="100%"
             height="352"
             frameBorder="0"
