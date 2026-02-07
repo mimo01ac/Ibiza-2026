@@ -17,6 +17,7 @@ export default function GallerySection() {
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     fetchPhotos();
@@ -36,6 +37,7 @@ export default function GallerySection() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError("");
     const fd = new FormData();
     fd.append("file", file);
     fd.append("category", category);
@@ -45,9 +47,12 @@ export default function GallerySection() {
       if (res.ok) {
         setCaption("");
         fetchPhotos();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setUploadError(data.error || `Upload failed (${res.status})`);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -106,6 +111,10 @@ export default function GallerySection() {
           </label>
         </div>
       </div>
+
+      {uploadError && (
+        <p className="mb-4 text-center text-xs text-red-400">{uploadError}</p>
+      )}
 
       {/* Photo grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
