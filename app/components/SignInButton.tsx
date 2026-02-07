@@ -35,14 +35,19 @@ export default function SignInButton() {
         redirect: false,
       });
 
+      console.log("signIn result:", JSON.stringify(result));
+
       if (result?.error || result?.ok === false) {
-        setError("Wrong password or missing name");
+        setError(`Auth error: ${JSON.stringify(result)}`);
         setLoading(false);
-      } else {
+      } else if (result?.ok) {
         window.location.href = "/";
+      } else {
+        setError(`Unexpected result: ${JSON.stringify(result)}`);
+        setLoading(false);
       }
-    } catch {
-      setError("Login failed — please try again");
+    } catch (err) {
+      setError(`Exception: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
   };

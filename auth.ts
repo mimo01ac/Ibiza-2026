@@ -7,6 +7,7 @@ function normalizeGuestName(name: string): string {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  session: { strategy: "jwt" },
   providers: [
     Facebook,
     Credentials({
