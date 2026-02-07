@@ -7,11 +7,12 @@ import CopyButton from "../CopyButton";
 import Modal from "../Modal";
 
 const TAXI_INFO = [
-  { destination: "Ibiza Airport (IBZ)", time: "~25 min", distance: "20 km" },
-  { destination: "Ibiza Old Town (Dalt Vila)", time: "~15 min", distance: "10 km" },
-  { destination: "Pacha / Marina", time: "~12 min", distance: "8 km" },
-  { destination: "San Antonio", time: "~20 min", distance: "15 km" },
-  { destination: "Playa d'en Bossa", time: "~20 min", distance: "14 km" },
+  { destination: "Ibiza Airport (IBZ)", time: "~15 min", distance: "12 km" },
+  { destination: "Ibiza Old Town (Dalt Vila)", time: "~10 min", distance: "6 km" },
+  { destination: "Pacha / Marina Botafoch", time: "~8 min", distance: "5 km" },
+  { destination: "Playa d'en Bossa", time: "~15 min", distance: "10 km" },
+  { destination: "San Antonio", time: "~30 min", distance: "22 km" },
+  { destination: "Santa Eulalia", time: "~10 min", distance: "7 km" },
 ];
 
 export default function VillaSection() {
@@ -36,7 +37,7 @@ export default function VillaSection() {
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neon-yellow text-glow-yellow">
               Address
             </h3>
-            <CopyButton text="Carrer del Olivo 50" label="Address" />
+            <CopyButton text="Carrer del Olivo, 50, 07849 Can Furnet, Illes Balears, Spain" label="Address" />
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-surface p-4">
@@ -78,7 +79,7 @@ export default function VillaSection() {
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl border border-[var(--border)]">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3084.5!2d1.4!3d38.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zIbiza!5e0!3m2!1sen!2ses!4v1"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3084.5!2d1.458667!3d38.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zQ2FycmVyIGRlbCBPbGl2bywgNTAsIDA3ODQ5IENhbiBGdXJuZXQ!5e0!3m2!1sen!2ses!4v1"
               width="100%"
               height="300"
               style={{ border: 0 }}
