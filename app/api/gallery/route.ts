@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Accepts JSON body with { filePath, category, caption } for direct-uploaded files
 export async function POST(req: NextRequest) {
   try {
     const session = await getSessionOrThrow();
@@ -28,25 +29,44 @@ export async function POST(req: NextRequest) {
       session.user!.image
     );
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const category = (formData.get("category") as string) || "ibiza_2026";
-    const caption = (formData.get("caption") as string) || null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
     const supabase = createAdminClient();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = `${category}/${Date.now()}-${file.name}`;
+    const contentType = req.headers.get("content-type") || "";
 
-    const { error: uploadError } = await supabase.storage
-      .from("gallery")
-      .upload(filePath, buffer, { contentType: file.type });
+    let filePath: string;
+    let category: string;
+    let caption: string | null;
 
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    if (contentType.includes("application/json")) {
+      // Direct upload path: file already in Supabase via signed URL
+      const body = await req.json();
+      filePath = body.filePath;
+      category = body.category || "ibiza_2026";
+      caption = body.caption || null;
+
+      if (!filePath) {
+        return NextResponse.json({ error: "No filePath provided" }, { status: 400 });
+      }
+    } else {
+      // Legacy: file uploaded through the API (small files only)
+      const formData = await req.formData();
+      const file = formData.get("file") as File | null;
+      category = (formData.get("category") as string) || "ibiza_2026";
+      caption = (formData.get("caption") as string) || null;
+
+      if (!file) {
+        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      filePath = `${category}/${Date.now()}-${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("gallery")
+        .upload(filePath, buffer, { contentType: file.type });
+
+      if (uploadError) {
+        return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      }
     }
 
     const { data: urlData } = supabase.storage

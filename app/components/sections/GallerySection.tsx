@@ -38,19 +38,50 @@ export default function GallerySection() {
     if (!file) return;
     setUploading(true);
     setUploadError("");
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("category", category);
-    if (caption.trim()) fd.append("caption", caption.trim());
+
     try {
-      const res = await fetch("/api/gallery", { method: "POST", body: fd });
-      if (res.ok) {
-        setCaption("");
-        fetchPhotos();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setUploadError(data.error || `Upload failed (${res.status})`);
+      // Step 1: Get a signed upload URL from our API
+      const urlRes = await fetch("/api/gallery/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, category }),
+      });
+      if (!urlRes.ok) {
+        const d = await urlRes.json().catch(() => ({}));
+        throw new Error(d.error || `Failed to get upload URL (${urlRes.status})`);
       }
+      const { signedUrl, token, filePath } = await urlRes.json();
+
+      // Step 2: Upload file directly to Supabase Storage (bypasses 4.5MB limit)
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+          Authorization: `Bearer ${token}`,
+        },
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        throw new Error(`Storage upload failed (${uploadRes.status})`);
+      }
+
+      // Step 3: Create gallery record in database
+      const recordRes = await fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filePath,
+          category,
+          caption: caption.trim() || null,
+        }),
+      });
+      if (!recordRes.ok) {
+        const d = await recordRes.json().catch(() => ({}));
+        throw new Error(d.error || `Failed to save photo (${recordRes.status})`);
+      }
+
+      setCaption("");
+      fetchPhotos();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
