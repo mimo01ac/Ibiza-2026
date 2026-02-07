@@ -29,7 +29,7 @@ export const CLUBS: ClubConfig[] = [
     name: "Chinois Ibiza",
     urls: [
       "https://clubchinoisibiza.com/events",
-      "https://www.ibiza-spotlight.com/night/club_chinois_ibiza",
+      "https://www.ibiza-spotlight.com/night/venue/chinois-ibiza",
     ],
     aiHints:
       "Smaller club — may have fewer events. If primary URL fails, fallback is ibiza-spotlight which lists events in a different format. Look for event names and dates.",
@@ -38,7 +38,7 @@ export const CLUBS: ClubConfig[] = [
     name: "Cova Santa",
     urls: [
       "https://covasanta.com/en/events.html",
-      "https://www.ibiza-spotlight.com/night/cova-santa-ibiza",
+      "https://www.ibiza-spotlight.com/night/venue/cova-santa",
     ],
     aiHints:
       "Restaurant/venue with occasional events. May have fewer listings. Fallback is ibiza-spotlight. Look for event/party names and dates.",

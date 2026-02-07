@@ -1,6 +1,6 @@
 import type { ClubConfig, ScrapedEvent } from "./types";
 
-const MAX_HTML_LENGTH = 100_000;
+const MAX_HTML_LENGTH = 40_000;
 
 /**
  * Strip styles, scripts (except data-bearing ones), and HTML comments.

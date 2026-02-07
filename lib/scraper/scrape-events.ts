@@ -5,7 +5,7 @@ import type { ClubConfig, ScrapeResult, ScrapeRunSummary } from "./types";
 
 const FETCH_TIMEOUT = 15_000;
 const BOT_EMAIL = "bot@ibiza-scraper.internal";
-const BATCH_SIZE = 3;
+const DELAY_BETWEEN_CLUBS_MS = 5_000;
 
 /**
  * Get or create the bot profile used as created_by for scraped events.
@@ -86,15 +86,19 @@ async function scrapeClub(club: ClubConfig): Promise<ScrapeResult> {
 }
 
 /**
- * Process clubs in batches of BATCH_SIZE for parallel execution.
+ * Process clubs sequentially with a delay to respect API rate limits.
  */
 async function scrapeAllClubs(): Promise<ScrapeResult[]> {
   const results: ScrapeResult[] = [];
 
-  for (let i = 0; i < CLUBS.length; i += BATCH_SIZE) {
-    const batch = CLUBS.slice(i, i + BATCH_SIZE);
-    const batchResults = await Promise.all(batch.map(scrapeClub));
-    results.push(...batchResults);
+  for (let i = 0; i < CLUBS.length; i++) {
+    const result = await scrapeClub(CLUBS[i]);
+    results.push(result);
+
+    // Delay between clubs to avoid Anthropic rate limits (50k tokens/min)
+    if (i < CLUBS.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_CLUBS_MS));
+    }
   }
 
   return results;
