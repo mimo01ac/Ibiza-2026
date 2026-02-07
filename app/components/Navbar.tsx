@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import NavbarClient from "./NavbarClient";
 
 export default async function Navbar() {
@@ -12,7 +12,7 @@ export default async function Navbar() {
 
     if (session.user.email) {
       try {
-        const supabase = await createClient();
+        const supabase = createAdminClient();
         const { data: profile } = await supabase
           .from("profiles")
           .select("is_admin")

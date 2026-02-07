@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionOrThrow, getProfileByEmail } from "@/lib/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(req: NextRequest) {
   try {
     const category = req.nextUrl.searchParams.get("category") || "past_trips";
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from("gallery_photos")
       .select("*, profile:profiles(*)")

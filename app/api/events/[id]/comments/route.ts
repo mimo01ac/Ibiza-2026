@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionOrThrow, getProfileByEmail } from "@/lib/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -9,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from("event_comments")
       .select("*, profile:profiles(*)")

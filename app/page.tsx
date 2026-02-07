@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import CountdownTimer from "./components/CountdownTimer";
 import ConfirmedParticipants from "./components/ConfirmedParticipants";
 import AllSections from "./components/sections/AllSections";
@@ -16,7 +16,7 @@ export default async function Home() {
   let isAdmin = false;
   try {
     if (session.user.email) {
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_admin")
