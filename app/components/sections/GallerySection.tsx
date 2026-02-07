@@ -16,6 +16,7 @@ export default function GallerySection() {
   const [category, setCategory] = useState<string>("past_trips");
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [caption, setCaption] = useState("");
   const [uploadError, setUploadError] = useState("");
 
@@ -40,7 +41,8 @@ export default function GallerySection() {
     setUploadError("");
 
     try {
-      // Step 1: Get a signed upload URL from our API
+      // Step 1: Get a signed upload URL
+      setUploadStatus("Getting upload URL...");
       const urlRes = await fetch("/api/gallery/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,24 +50,24 @@ export default function GallerySection() {
       });
       if (!urlRes.ok) {
         const d = await urlRes.json().catch(() => ({}));
-        throw new Error(d.error || `Failed to get upload URL (${urlRes.status})`);
+        throw new Error(d.error || `Step 1 failed (${urlRes.status})`);
       }
       const { signedUrl, token, filePath } = await urlRes.json();
 
-      // Step 2: Upload file directly to Supabase Storage (bypasses 4.5MB limit)
+      // Step 2: Upload file directly to Supabase Storage
+      setUploadStatus("Uploading to storage...");
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": file.type },
         body: file,
       });
       if (!uploadRes.ok) {
-        throw new Error(`Storage upload failed (${uploadRes.status})`);
+        const text = await uploadRes.text().catch(() => "");
+        throw new Error(`Step 2 failed (${uploadRes.status}): ${text.slice(0, 200)}`);
       }
 
       // Step 3: Create gallery record in database
+      setUploadStatus("Saving photo record...");
       const recordRes = await fetch("/api/gallery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,12 +79,14 @@ export default function GallerySection() {
       });
       if (!recordRes.ok) {
         const d = await recordRes.json().catch(() => ({}));
-        throw new Error(d.error || `Failed to save photo (${recordRes.status})`);
+        throw new Error(d.error || `Step 3 failed (${recordRes.status})`);
       }
 
+      setUploadStatus("");
       setCaption("");
       fetchPhotos();
     } catch (err) {
+      setUploadStatus("");
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
@@ -131,7 +135,7 @@ export default function GallerySection() {
             className="rounded-lg border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-pink"
           />
           <label className="cursor-pointer rounded-lg border border-neon-pink bg-neon-pink/10 px-4 py-2 text-sm font-semibold text-neon-pink transition-colors hover:bg-neon-pink/20">
-            {uploading ? "Uploading..." : "Upload"}
+            {uploading ? (uploadStatus || "Uploading...") : "Upload"}
             <input
               type="file"
               className="hidden"
