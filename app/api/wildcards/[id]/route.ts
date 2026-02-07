@@ -1,0 +1,43 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionOrThrow, getProfileByEmail } from "@/lib/auth-helpers";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await getSessionOrThrow();
+    const profile = await getProfileByEmail(
+      session.user!.email!,
+      session.user!.name,
+      session.user!.image
+    );
+
+    const supabase = createAdminClient();
+
+    // Check ownership or admin
+    const { data: wildcard } = await supabase
+      .from("wildcards")
+      .select("submitted_by")
+      .eq("id", id)
+      .single();
+
+    if (!wildcard) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (wildcard.submitted_by !== profile.id && !profile.is_admin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { error } = await supabase.from("wildcards").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: msg }, { status: 401 });
+  }
+}

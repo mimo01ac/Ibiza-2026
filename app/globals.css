@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --surface: #12121a;
+  --border: #1e1e2e;
+  --foreground: #e0e0e0;
+  --neon-pink: #ff2d95;
+  --neon-cyan: #00f0ff;
+  --neon-purple: #b026ff;
+  --neon-yellow: #f0ff26;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-border-custom: var(--border);
+  --color-foreground: var(--foreground);
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-yellow: var(--neon-yellow);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Neon glow box-shadow utilities */
+.neon-glow-pink {
+  box-shadow: 0 0 15px rgba(255, 45, 149, 0.5), 0 0 45px rgba(255, 45, 149, 0.2);
+}
+
+.neon-glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5), 0 0 45px rgba(0, 240, 255, 0.2);
+}
+
+.neon-glow-purple {
+  box-shadow: 0 0 15px rgba(176, 38, 255, 0.5), 0 0 45px rgba(176, 38, 255, 0.2);
+}
+
+/* Neon text-shadow utilities */
+.text-glow-pink {
+  text-shadow: 0 0 10px rgba(255, 45, 149, 0.7), 0 0 40px rgba(255, 45, 149, 0.3), 0 0 80px rgba(255, 45, 149, 0.1);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 40px rgba(0, 240, 255, 0.3), 0 0 80px rgba(0, 240, 255, 0.1);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 10px rgba(176, 38, 255, 0.7), 0 0 40px rgba(176, 38, 255, 0.3), 0 0 80px rgba(176, 38, 255, 0.1);
+}
+
+.text-glow-yellow {
+  text-shadow: 0 0 10px rgba(240, 255, 38, 0.7), 0 0 40px rgba(240, 255, 38, 0.3), 0 0 80px rgba(240, 255, 38, 0.1);
+}
+
+/* Animated gradient border */
+.neon-border {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.neon-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple));
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  padding: 1px;
+}
