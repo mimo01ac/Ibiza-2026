@@ -2,7 +2,7 @@ import type { ClubConfig, ScrapedEvent } from "./types";
 
 const MAX_HTML_LENGTH = 40_000;
 const TRIP_START = "2026-06-27";
-const TRIP_END = "2026-07-04";
+const TRIP_END = "2026-07-03";
 
 /**
  * Strip styles, scripts (except data-bearing ones), and HTML comments.
