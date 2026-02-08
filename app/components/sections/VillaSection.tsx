@@ -19,6 +19,8 @@ const VILLA_PHOTOS = [
   { src: "/villa/poolside.jpg", alt: "Poolside vibes at Casa Olivo" },
   { src: "/villa/terrace-view.jpg", alt: "Terrace view over the pool and island" },
   { src: "/villa/pool-swim.jpg", alt: "Swimming in the villa pool" },
+  { src: "/villa/villa-exterior.webp", alt: "Villa exterior with bougainvillea and pool" },
+  { src: "/villa/villa-front.webp", alt: "Casa Olivo front view" },
 ];
 
 export default function VillaSection() {
