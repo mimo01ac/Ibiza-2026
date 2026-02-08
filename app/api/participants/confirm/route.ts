@@ -10,9 +10,9 @@ export async function GET() {
       session.user!.name,
       session.user!.image
     );
-    return NextResponse.json({ is_confirmed: profile.is_confirmed ?? false });
+    return NextResponse.json({ is_confirmed: profile.is_confirmed ?? false, profile_id: profile.id });
   } catch {
-    return NextResponse.json({ is_confirmed: false });
+    return NextResponse.json({ is_confirmed: false, profile_id: null });
   }
 }
 
