@@ -107,7 +107,7 @@ export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipants
       {participants.length > 0 ? (
         <div className="mb-8 flex flex-wrap items-center justify-center gap-6">
           {participants.map((p) => (
-            <div key={p.id} className="group relative flex flex-col items-center gap-2">
+            <div key={p.id} className="relative flex flex-col items-center gap-2">
               <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-neon-pink/50 shadow-[0_0_15px_rgba(255,16,240,0.2)]">
                 {p.avatar_url ? (
                   <Image
@@ -122,20 +122,21 @@ export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipants
                     {p.display_name.charAt(0).toUpperCase()}
                   </div>
                 )}
-
-                {/* Admin delete overlay */}
-                {isAdmin && (
-                  <button
-                    onClick={() => handleAdminRemove(p.id, p.display_name)}
-                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
-                    title={`Remove ${p.display_name}`}
-                  >
-                    <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
               </div>
+
+              {/* Admin delete badge — always visible, works on mobile */}
+              {isAdmin && (
+                <button
+                  onClick={() => handleAdminRemove(p.id, p.display_name)}
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500/90 text-white shadow-md transition-transform hover:scale-110"
+                  title={`Remove ${p.display_name}`}
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+
               <span className="max-w-[80px] truncate text-xs text-gray-400">
                 {p.display_name}
               </span>
