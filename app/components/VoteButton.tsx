@@ -8,6 +8,7 @@ interface VoteButtonProps {
   initialCount: number;
   initialVoted: boolean;
   apiEndpoint: string;
+  onVoteChange?: (count: number, voted: boolean) => void;
 }
 
 export default function VoteButton({
@@ -15,6 +16,7 @@ export default function VoteButton({
   initialCount,
   initialVoted,
   apiEndpoint,
+  onVoteChange,
 }: VoteButtonProps) {
   const [count, setCount] = useState(initialCount);
   const [voted, setVoted] = useState(initialVoted);
@@ -52,6 +54,7 @@ export default function VoteButton({
         const data = await res.json();
         setCount(data.vote_count);
         setVoted(data.user_voted);
+        onVoteChange?.(data.vote_count, data.user_voted);
       }
     } catch {
       setVoted(voted);

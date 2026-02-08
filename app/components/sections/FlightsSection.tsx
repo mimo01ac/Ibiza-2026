@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PageHeader from "../PageHeader";
+import UserAvatar from "../UserAvatar";
 import { useToast } from "../Toast";
 import type { Flight } from "@/lib/types/database";
 
@@ -207,9 +208,16 @@ export default function FlightsSection() {
           <div className="space-y-3 md:hidden">
             {flights.map((f) => (
               <div key={f.id} className="rounded-xl border border-[var(--border)] bg-surface p-4">
-                <p className="mb-2 font-semibold text-neon-cyan">
-                  {f.profile?.display_name ?? "Unknown"}
-                </p>
+                <div className="mb-2 flex items-center gap-2">
+                  <UserAvatar
+                    src={f.profile?.avatar_url}
+                    name={f.profile?.display_name ?? "Unknown"}
+                    size="sm"
+                  />
+                  <p className="font-semibold text-neon-cyan">
+                    {f.profile?.display_name ?? "Unknown"}
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p className="text-xs text-gray-500">Arrival</p>
@@ -271,8 +279,17 @@ export default function FlightsSection() {
               <tbody>
                 {flights.map((f) => (
                   <tr key={f.id} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-4 py-3 font-medium text-neon-cyan">
-                      {f.profile?.display_name ?? "Unknown"}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <UserAvatar
+                          src={f.profile?.avatar_url}
+                          name={f.profile?.display_name ?? "Unknown"}
+                          size="sm"
+                        />
+                        <span className="font-medium text-neon-cyan">
+                          {f.profile?.display_name ?? "Unknown"}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-300">
                       {f.arrival_date} {f.arrival_time && <span className="text-gray-500">{f.arrival_time}</span>}
@@ -329,9 +346,14 @@ export default function FlightsSection() {
                 return (
                   <div key={f.id} className="relative h-8">
                     <div
-                      className={`absolute top-0 h-full rounded-full ${COLORS[i % COLORS.length]} flex items-center px-3 text-xs font-semibold text-black opacity-80`}
+                      className={`absolute top-0 h-full rounded-full ${COLORS[i % COLORS.length]} flex items-center gap-1 px-1.5 text-xs font-semibold text-black opacity-80`}
                       style={{ left: pos.left, width: pos.width, minWidth: "60px" }}
                     >
+                      <UserAvatar
+                        src={f.profile?.avatar_url}
+                        name={f.profile?.display_name ?? "Unknown"}
+                        size="xs"
+                      />
                       <span className="truncate">{f.profile?.display_name ?? "Unknown"}</span>
                     </div>
                   </div>

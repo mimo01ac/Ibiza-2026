@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import PageHeader from "../PageHeader";
+import UserAvatar from "../UserAvatar";
 import type { RoomAllocation, Profile } from "@/lib/types/database";
 
 const ROOM_ICONS: Record<string, string> = {
@@ -91,15 +91,13 @@ export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
               </select>
             ) : (
               <div className="flex items-center gap-2">
-                {room.profile?.avatar_url && (
-                  <Image
+                {room.profile ? (
+                  <UserAvatar
                     src={room.profile.avatar_url}
-                    alt={room.profile.display_name}
-                    width={28}
-                    height={28}
-                    className="rounded-full"
+                    name={room.profile.display_name}
+                    size="md"
                   />
-                )}
+                ) : null}
                 <span className={`text-sm ${room.profile ? "text-neon-cyan" : "text-gray-600"}`}>
                   {room.profile?.display_name ?? "Unassigned"}
                 </span>

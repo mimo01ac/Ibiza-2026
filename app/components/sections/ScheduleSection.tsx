@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import PageHeader from "../PageHeader";
 import VoteButton from "../VoteButton";
+import VoterAvatars from "../VoterAvatars";
 import CommentSection from "../CommentSection";
 import type { EventWithVotes } from "@/lib/types/database";
 
@@ -14,6 +15,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
   const [events, setEvents] = useState<EventWithVotes[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [allExpanded, setAllExpanded] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
   const [formData, setFormData] = useState({
     title: "",
     club: "",
@@ -194,6 +196,14 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                           initialCount={event.vote_count}
                           initialVoted={event.user_voted}
                           apiEndpoint="/api/events"
+                          onVoteChange={(count) =>
+                            setVoteCounts((prev) => ({ ...prev, [event.id]: count }))
+                          }
+                        />
+                        <VoterAvatars
+                          entityId={event.id}
+                          entityType="events"
+                          voteCount={voteCounts[event.id] ?? event.vote_count}
                         />
                         {event.ticket_url && (
                           <a
@@ -248,6 +258,8 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         isAdmin={isAdmin}
         handleDelete={handleDelete}
         formatDate={formatDate}
+        voteCounts={voteCounts}
+        setVoteCounts={setVoteCounts}
       />
 
       {events.length === 0 && (
@@ -266,6 +278,8 @@ function MobileSchedule({
   isAdmin,
   handleDelete,
   formatDate,
+  voteCounts,
+  setVoteCounts,
 }: {
   days: string[];
   events: EventWithVotes[];
@@ -274,6 +288,8 @@ function MobileSchedule({
   isAdmin: boolean;
   handleDelete: (id: string) => void;
   formatDate: (d: string) => string;
+  voteCounts: Record<string, number>;
+  setVoteCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -368,6 +384,14 @@ function MobileSchedule({
                         initialCount={event.vote_count}
                         initialVoted={event.user_voted}
                         apiEndpoint="/api/events"
+                        onVoteChange={(count) =>
+                          setVoteCounts((prev) => ({ ...prev, [event.id]: count }))
+                        }
+                      />
+                      <VoterAvatars
+                        entityId={event.id}
+                        entityType="events"
+                        voteCount={voteCounts[event.id] ?? event.vote_count}
                       />
                       {event.ticket_url && (
                         <a

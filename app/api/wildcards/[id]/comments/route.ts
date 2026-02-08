@@ -57,3 +57,47 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 401 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await params; // consume params
+    const session = await getSessionOrThrow();
+    const profile = await getProfileByEmail(
+      session.user!.email!,
+      session.user!.name,
+      session.user!.image
+    );
+
+    const { commentId } = await req.json();
+    if (!commentId) {
+      return NextResponse.json({ error: "commentId required" }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Verify ownership
+    const { data: comment } = await supabase
+      .from("wildcard_comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single();
+
+    if (!comment) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (comment.user_id !== profile.id && !profile.is_admin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { error } = await supabase.from("wildcard_comments").delete().eq("id", commentId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: msg }, { status: 401 });
+  }
+}

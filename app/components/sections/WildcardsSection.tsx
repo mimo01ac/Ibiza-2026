@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PageHeader from "../PageHeader";
 import VoteButton from "../VoteButton";
+import VoterAvatars from "../VoterAvatars";
 import CommentSection from "../CommentSection";
 import type { WildcardWithVotes } from "@/lib/types/database";
 
@@ -10,6 +11,7 @@ export default function WildcardsSection() {
   const [wildcards, setWildcards] = useState<WildcardWithVotes[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -117,12 +119,20 @@ export default function WildcardsSection() {
                   <p className="mt-1 text-[10px] text-gray-600">
                     by {w.profile?.display_name ?? "Unknown"}
                   </p>
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center gap-1">
                     <VoteButton
                       entityId={w.id}
                       initialCount={w.vote_count}
                       initialVoted={w.user_voted}
                       apiEndpoint="/api/wildcards"
+                      onVoteChange={(count) =>
+                        setVoteCounts((prev) => ({ ...prev, [w.id]: count }))
+                      }
+                    />
+                    <VoterAvatars
+                      entityId={w.id}
+                      entityType="wildcards"
+                      voteCount={voteCounts[w.id] ?? w.vote_count}
                     />
                   </div>
                   <CommentSection entityId={w.id} apiEndpoint="/api/wildcards" />
