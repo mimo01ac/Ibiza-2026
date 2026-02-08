@@ -7,6 +7,25 @@ function normalizeGuestName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+// Store facebook_id on the profile — completely detached from the auth flow.
+function storeFacebookId(facebookId: string, email: string) {
+  try {
+    const supabase = createAdminClient();
+    Promise.resolve(
+      supabase
+        .from("profiles")
+        .update({ facebook_id: facebookId })
+        .eq("auth_user_email", email)
+    ).then(({ error }) => {
+      if (error) console.warn("[auth] Failed to store facebook_id:", error.message);
+    }).catch(() => {
+      // Silently ignore — this is a non-critical background task
+    });
+  } catch {
+    // Silently ignore — createAdminClient() may fail on edge runtime
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   debug: true,
@@ -45,33 +64,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    redirect({ url, baseUrl }) {
+      // Ensure redirects always go to our app
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        // Invalid URL — fall back to base
+      }
+      return baseUrl;
+    },
     jwt({ token, user, profile }) {
       if (profile) {
-        // Facebook returns picture as { data: { url: "..." } }, not a string.
-        // Auth.js normalizes it to user.image via the provider's profile() fn.
         const fbPic = (profile as Record<string, any>).picture;
         token.picture =
           user?.image ??
           (typeof fbPic === "string" ? fbPic : fbPic?.data?.url) ??
-          `https://graph.facebook.com/${profile.id}/picture?type=large`;
+          (profile.id
+            ? `https://graph.facebook.com/${profile.id}/picture?type=large`
+            : undefined);
 
-        // Store Facebook user ID on the profile for GDPR data deletion lookups.
-        // Fire-and-forget — wrapped in try-catch so it never crashes the JWT callback.
+        // Fire-and-forget — completely detached from the auth flow
         if (profile.id && user?.email) {
-          try {
-            const supabase = createAdminClient();
-            supabase
-              .from("profiles")
-              .update({ facebook_id: String(profile.id) })
-              .eq("auth_user_email", user.email)
-              .then(({ error }) => {
-                if (error) {
-                  console.warn("[auth] Failed to store facebook_id:", error.message);
-                }
-              });
-          } catch (e) {
-            console.warn("[auth] Supabase call failed in jwt callback:", e);
-          }
+          storeFacebookId(String(profile.id), user.email);
         }
       }
       if (user) {
