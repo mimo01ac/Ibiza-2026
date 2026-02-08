@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useToast } from "./Toast";
 
 interface Participant {
   id: string;
@@ -10,11 +11,16 @@ interface Participant {
   avatar_url: string | null;
 }
 
-export default function ConfirmedParticipants() {
+interface ConfirmedParticipantsProps {
+  isAdmin: boolean;
+}
+
+export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipantsProps) {
   const { data: session } = useSession();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   const fetchParticipants = useCallback(async () => {
     try {
@@ -57,11 +63,32 @@ export default function ConfirmedParticipants() {
         await fetchParticipants();
       } else {
         setIsConfirmed(wasConfirmed);
+        toast.error(data.error || "Failed to update status");
       }
     } catch {
       setIsConfirmed(wasConfirmed);
+      toast.error("Failed to update status");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAdminRemove = async (profileId: string, name: string) => {
+    try {
+      const res = await fetch("/api/participants/confirm", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId }),
+      });
+      if (res.ok) {
+        await fetchParticipants();
+        toast.success(`${name} removed`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to remove participant");
+      }
+    } catch {
+      toast.error("Failed to remove participant");
     }
   };
 
@@ -80,7 +107,7 @@ export default function ConfirmedParticipants() {
       {participants.length > 0 ? (
         <div className="mb-8 flex flex-wrap items-center justify-center gap-6">
           {participants.map((p) => (
-            <div key={p.id} className="flex flex-col items-center gap-2">
+            <div key={p.id} className="group relative flex flex-col items-center gap-2">
               <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-neon-pink/50 shadow-[0_0_15px_rgba(255,16,240,0.2)]">
                 {p.avatar_url ? (
                   <Image
@@ -94,6 +121,19 @@ export default function ConfirmedParticipants() {
                   <div className="flex h-full w-full items-center justify-center bg-gray-800 text-lg font-bold text-neon-pink">
                     {p.display_name.charAt(0).toUpperCase()}
                   </div>
+                )}
+
+                {/* Admin delete overlay */}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleAdminRemove(p.id, p.display_name)}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
+                    title={`Remove ${p.display_name}`}
+                  >
+                    <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
               <span className="max-w-[80px] truncate text-xs text-gray-400">

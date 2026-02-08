@@ -66,7 +66,7 @@ export default async function Home() {
       </div>
 
       {/* Confirmed participants */}
-      <ConfirmedParticipants />
+      <ConfirmedParticipants isAdmin={isAdmin} />
 
       {/* All feature sections */}
       <AllSections isAdmin={isAdmin} />
