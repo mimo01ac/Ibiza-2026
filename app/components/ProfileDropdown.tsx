@@ -18,7 +18,7 @@ interface ProfileDropdownProps {
 }
 
 export default function ProfileDropdown({ user }: ProfileDropdownProps) {
-  const { update } = useSession();
+  const { data: session, update } = useSession();
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -50,7 +50,7 @@ export default function ProfileDropdown({ user }: ProfileDropdownProps) {
       .then((data: ProfileData) => {
         setProfile(data);
         setDisplayName(data.display_name);
-        setContactEmail(data.contact_email ?? "");
+        setContactEmail(data.contact_email ?? session?.user?.email ?? "");
         setAvatarPreview(data.avatar_url);
         setAvatarFile(null);
       })
