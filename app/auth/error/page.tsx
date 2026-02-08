@@ -1,11 +1,23 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useSession } from "next-auth/react";
+import { useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 
 function AuthErrorContent() {
   const params = useSearchParams();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const error = params.get("error") ?? "Unknown";
+
+  // If the user is actually logged in (session exists), auto-redirect home.
+  // This handles the case where login succeeded but Auth.js still showed error page.
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
 
   const messages: Record<string, string> = {
     Configuration: "Server configuration problem — check AUTH_SECRET, AUTH_FACEBOOK_ID, AUTH_FACEBOOK_SECRET env vars.",
@@ -17,6 +29,15 @@ function AuthErrorContent() {
     Callback: "Error in the auth callback handler.",
     Default: "An unknown authentication error occurred.",
   };
+
+  // If authenticated, show brief redirect message
+  if (status === "authenticated") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-gray-400">Redirecting...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">

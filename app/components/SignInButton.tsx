@@ -51,7 +51,7 @@ export default function SignInButton() {
         <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg shadow-black/50">
           {/* Facebook login */}
           <button
-            onClick={() => signIn("facebook")}
+            onClick={() => signIn("facebook", { callbackUrl: "/" })}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#166FE5]"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
