@@ -6,18 +6,18 @@ import Image from "next/image";
 import { guestLogin } from "@/app/actions/auth";
 
 export default function LandingPage() {
-  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [guestPassword, setGuestPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || !guestPassword) return;
+    if (!guestEmail.trim() || !guestPassword) return;
     setLoading(true);
     setError("");
 
-    const result = await guestLogin(guestName.trim(), guestPassword);
+    const result = await guestLogin(guestEmail.trim(), guestPassword);
 
     if (result?.error) {
       setError(result.error);
@@ -74,10 +74,10 @@ export default function LandingPage() {
           {/* Guest login form */}
           <form onSubmit={handleGuestLogin} className="flex flex-col gap-3">
             <input
-              type="text"
-              placeholder="Your name"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
+              type="email"
+              placeholder="Your email"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
               required
               className="rounded-lg border border-[var(--border)] bg-background px-3 py-2.5 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-cyan"
             />

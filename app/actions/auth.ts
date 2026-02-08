@@ -3,10 +3,10 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 
-export async function guestLogin(name: string, password: string) {
+export async function guestLogin(email: string, password: string) {
   try {
     await signIn("credentials", {
-      name,
+      email,
       password,
       redirectTo: "/",
     });

@@ -15,6 +15,7 @@ export async function GET() {
       display_name: profile.display_name,
       avatar_url: profile.avatar_url,
       contact_email: profile.contact_email ?? null,
+      display_name_set: profile.display_name_set,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Server error";
@@ -32,10 +33,11 @@ export async function PATCH(req: NextRequest) {
     );
 
     const body = await req.json();
-    const updates: Record<string, string | null> = {};
+    const updates: Record<string, string | boolean | null> = {};
 
     if (typeof body.display_name === "string" && body.display_name.trim()) {
       updates.display_name = body.display_name.trim();
+      updates.display_name_set = true;
     }
     if (typeof body.avatar_url === "string") {
       updates.avatar_url = body.avatar_url || null;

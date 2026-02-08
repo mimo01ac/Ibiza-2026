@@ -7,6 +7,7 @@ import FlightsSection from "./FlightsSection";
 import RoomsSection from "./RoomsSection";
 import GallerySection from "./GallerySection";
 import VillaSection from "./VillaSection";
+import DisplayNameModal from "../DisplayNameModal";
 
 interface AllSectionsProps {
   isAdmin: boolean;
@@ -15,6 +16,7 @@ interface AllSectionsProps {
 export default function AllSections({ isAdmin }: AllSectionsProps) {
   return (
     <>
+      <DisplayNameModal />
       <WildcardsSection />
       <ScheduleSection isAdmin={isAdmin} />
       <DjSection isAdmin={isAdmin} />

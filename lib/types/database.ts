@@ -5,6 +5,7 @@ export interface Profile {
   avatar_url: string | null;
   is_admin: boolean;
   is_confirmed: boolean;
+  display_name_set: boolean;
   contact_email: string | null;
   created_at: string;
   updated_at: string;

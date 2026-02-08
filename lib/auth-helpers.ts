@@ -39,12 +39,16 @@ export async function getProfileByEmail(
     return existing as Profile;
   }
 
+  // If a real name was provided (e.g. Facebook), mark display_name_set = true
+  const hasRealName = !!name && name !== email.split("@")[0];
+
   const { data: created, error } = await supabase
     .from("profiles")
     .insert({
       auth_user_email: email,
       display_name: name ?? email.split("@")[0],
       avatar_url: image ?? null,
+      display_name_set: hasRealName,
     })
     .select()
     .single();

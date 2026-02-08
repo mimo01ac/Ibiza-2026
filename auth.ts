@@ -3,10 +3,6 @@ import Facebook from "next-auth/providers/facebook";
 import Credentials from "next-auth/providers/credentials";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-function normalizeGuestName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, "-");
-}
-
 // Store facebook_id on the profile — completely detached from the auth flow.
 function storeFacebookId(facebookId: string, email: string) {
   try {
@@ -35,27 +31,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Facebook,
     Credentials({
       credentials: {
-        name: { label: "Name", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         try {
           if (!credentials) return null;
 
-          const name = String(credentials.name ?? "").trim();
+          const email = String(credentials.email ?? "").trim().toLowerCase();
           const password = String(credentials.password ?? "");
 
-          if (!name || !password) return null;
+          if (!email || !password) return null;
 
           // Env var check + hardcoded fallback for debugging
           const expected = process.env.GUEST_PASSWORD ?? "casaolivo";
           if (password !== expected) return null;
 
-          const normalized = normalizeGuestName(name);
           return {
-            id: `guest_${normalized}`,
-            name,
-            email: `guest_${normalized}@ibiza-2026.app`,
+            id: `guest_${email}`,
+            name: email.split("@")[0],
+            email,
           };
         } catch {
           return null;
