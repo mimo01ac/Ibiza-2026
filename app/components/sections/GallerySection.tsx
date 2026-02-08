@@ -195,9 +195,12 @@ export default function GallerySection() {
     e.target.value = "";
   };
 
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/gallery/${id}`, { method: "DELETE" });
+      setConfirmDelete(null);
       setSelectedPhoto(null);
       fetchPhotos();
     } catch {
@@ -332,17 +335,18 @@ export default function GallerySection() {
       )}
 
       {/* Lightbox */}
-      <Modal open={!!selectedPhoto} onClose={() => setSelectedPhoto(null)}>
+      <Modal open={!!selectedPhoto} onClose={() => { setSelectedPhoto(null); setConfirmDelete(null); }}>
         {selectedPhoto && (
-          <div>
-            <Image
-              src={selectedPhoto.file_url}
-              alt={selectedPhoto.caption ?? "Gallery photo"}
-              width={1200}
-              height={800}
-              className="rounded-lg"
-            />
-            <div className="mt-3 flex items-center justify-between">
+          <div className="flex flex-col items-center">
+            <div className="relative max-h-[75vh] w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedPhoto.file_url}
+                alt={selectedPhoto.caption ?? "Gallery photo"}
+                className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain"
+              />
+            </div>
+            <div className="mt-3 flex w-full items-center justify-between">
               <div>
                 {selectedPhoto.caption && (
                   <p className="text-sm text-gray-300">{selectedPhoto.caption}</p>
@@ -351,12 +355,30 @@ export default function GallerySection() {
                   by {selectedPhoto.profile?.display_name ?? "Unknown"}
                 </p>
               </div>
-              <button
-                onClick={() => handleDelete(selectedPhoto.id)}
-                className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-500/10"
-              >
-                Delete
-              </button>
+              {confirmDelete === selectedPhoto.id ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Delete?</span>
+                  <button
+                    onClick={() => handleDelete(selectedPhoto.id)}
+                    className="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/30"
+                  >
+                    Yes, delete
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-gray-400 transition-colors hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(selectedPhoto.id)}
+                  className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         )}
