@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import SignInButton from "./SignInButton";
-import SignOutButton from "./SignOutButton";
+import ProfileDropdown from "./ProfileDropdown";
 
 const NAV_LINKS = [
   { label: "Events", href: "#wildcards" },
@@ -61,21 +60,7 @@ export default function NavbarClient({ user, isAdmin: _isAdmin }: NavbarClientPr
         {/* Right side: user + hamburger */}
         <div className="flex items-center gap-3">
           {user ? (
-            <>
-              {user.image && (
-                <Image
-                  src={user.image}
-                  alt={user.name ?? "User"}
-                  width={32}
-                  height={32}
-                  className="rounded-full ring-2 ring-neon-cyan"
-                />
-              )}
-              <span className="hidden text-sm text-gray-300 sm:inline">
-                {user.name}
-              </span>
-              <SignOutButton />
-            </>
+            <ProfileDropdown user={user} />
           ) : (
             <SignInButton />
           )}

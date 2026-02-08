@@ -74,7 +74,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return baseUrl;
     },
-    jwt({ token, user, profile }) {
+    async jwt({ token, user, profile, trigger }) {
       if (profile) {
         const fbPic = (profile as Record<string, any>).picture;
         token.picture =
@@ -93,6 +93,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.name = user.name;
         token.email = user.email;
       }
+
+      // On session update() call, refetch profile from DB to reflect edits
+      if (trigger === "update" && token.email) {
+        try {
+          const supabase = createAdminClient();
+          const { data } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("auth_user_email", token.email)
+            .single();
+          if (data) {
+            token.name = data.display_name;
+            if (data.avatar_url) token.picture = data.avatar_url;
+          }
+        } catch {
+          // Non-critical — keep existing token values
+        }
+      }
+
       return token;
     },
     session({ session, token }) {
