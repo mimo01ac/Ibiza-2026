@@ -347,8 +347,21 @@ export default function GallerySection() {
         <p className="mt-8 text-center text-sm text-gray-600">No photos yet. Upload the first!</p>
       )}
 
-      {/* Lightbox */}
-      <Modal open={!!selectedPhoto} onClose={() => { setSelectedPhoto(null); setConfirmDelete(null); }}>
+      {/* Lightbox with prev/next navigation */}
+      <Modal
+        open={!!selectedPhoto}
+        onClose={() => { setSelectedPhoto(null); setConfirmDelete(null); }}
+        onPrev={photos.length > 1 ? () => {
+          const idx = photos.findIndex((p) => p.id === selectedPhoto?.id);
+          if (idx > 0) { setSelectedPhoto(photos[idx - 1]); setConfirmDelete(null); }
+          else { setSelectedPhoto(photos[photos.length - 1]); setConfirmDelete(null); }
+        } : undefined}
+        onNext={photos.length > 1 ? () => {
+          const idx = photos.findIndex((p) => p.id === selectedPhoto?.id);
+          if (idx < photos.length - 1) { setSelectedPhoto(photos[idx + 1]); setConfirmDelete(null); }
+          else { setSelectedPhoto(photos[0]); setConfirmDelete(null); }
+        } : undefined}
+      >
         {selectedPhoto && (
           <div className="flex flex-col items-center">
             <div className="relative max-h-[75vh] w-full">
