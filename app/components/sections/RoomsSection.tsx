@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import PageHeader from "../PageHeader";
 import UserAvatar from "../UserAvatar";
-import type { RoomAllocation, Profile } from "@/lib/types/database";
+import type { Profile } from "@/lib/types/database";
 
 const ROOM_ICONS: Record<string, string> = {
   "Master Bedroom": "👑",
@@ -14,20 +14,27 @@ const ROOM_ICONS: Record<string, string> = {
   "Gold's Gym Suite": "💪",
 };
 
+interface RoomData {
+  id: string;
+  room_name: string;
+  description: string | null;
+  profiles: Pick<Profile, "id" | "display_name" | "avatar_url">[];
+}
+
 interface RoomsSectionProps {
   isAdmin: boolean;
 }
 
 export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
-  const [rooms, setRooms] = useState<RoomAllocation[]>([]);
-  const [profiles, setProfiles] = useState<Pick<Profile, "id" | "display_name">[]>([]);
+  const [rooms, setRooms] = useState<RoomData[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Pick<Profile, "id" | "display_name">[]>([]);
 
   useEffect(() => {
     fetchRooms();
     if (isAdmin) {
       fetch("/api/rooms/profiles")
         .then((r) => r.json())
-        .then((data) => setProfiles(data))
+        .then((data) => setAllProfiles(data))
         .catch(() => {});
     }
   }, [isAdmin]);
@@ -42,7 +49,8 @@ export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
     }
   };
 
-  const handleAssign = async (roomId: string, userId: string | null) => {
+  const handleAdd = async (roomId: string, userId: string) => {
+    if (!userId) return;
     try {
       await fetch("/api/rooms", {
         method: "POST",
@@ -54,6 +62,22 @@ export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
       // ignore
     }
   };
+
+  const handleRemove = async (roomId: string, userId: string) => {
+    try {
+      await fetch("/api/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room_id: roomId, user_id: userId, action: "remove" }),
+      });
+      fetchRooms();
+    } catch {
+      // ignore
+    }
+  };
+
+  // Users already assigned to any room
+  const assignedUserIds = new Set(rooms.flatMap((r) => r.profiles.map((p) => p.id)));
 
   return (
     <section id="rooms" className="scroll-mt-20 py-16">
@@ -74,34 +98,51 @@ export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
               <p className="mb-3 text-xs text-gray-500">{room.description}</p>
             )}
 
-            {isAdmin ? (
-              <select
-                value={room.user_id ?? ""}
-                onChange={(e) =>
-                  handleAssign(room.id, e.target.value || null)
-                }
-                className="w-full rounded-lg border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-neon-purple"
-              >
-                <option value="">Unassigned</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.display_name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="flex items-center gap-2">
-                {room.profile ? (
+            {/* Occupants list */}
+            <div className="space-y-2">
+              {room.profiles.map((p) => (
+                <div key={p.id} className="flex items-center gap-2">
                   <UserAvatar
-                    src={room.profile.avatar_url}
-                    name={room.profile.display_name}
-                    size="md"
+                    src={p.avatar_url}
+                    name={p.display_name}
+                    size="sm"
                   />
-                ) : null}
-                <span className={`text-sm ${room.profile ? "text-neon-cyan" : "text-gray-600"}`}>
-                  {room.profile?.display_name ?? "Unassigned"}
-                </span>
-              </div>
+                  <span className="flex-1 text-sm text-neon-cyan">{p.display_name}</span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleRemove(room.id, p.id)}
+                      className="rounded p-1 text-gray-600 transition-colors hover:text-neon-pink"
+                      title="Remove"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {room.profiles.length === 0 && (
+                <span className="text-sm text-gray-600">Unassigned</span>
+              )}
+            </div>
+
+            {/* Admin: add user dropdown */}
+            {isAdmin && (
+              <select
+                value=""
+                onChange={(e) => handleAdd(room.id, e.target.value)}
+                className="mt-3 w-full rounded-lg border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-neon-purple"
+              >
+                <option value="">+ Add person...</option>
+                {allProfiles
+                  .filter((p) => !assignedUserIds.has(p.id))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.display_name}
+                    </option>
+                  ))}
+              </select>
             )}
           </div>
         ))}
