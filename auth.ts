@@ -9,7 +9,7 @@ function normalizeGuestName(name: string): string {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  debug: process.env.NODE_ENV !== "production",
+  debug: true,
   pages: { error: "/auth/error" },
   session: { strategy: "jwt" },
   providers: [
