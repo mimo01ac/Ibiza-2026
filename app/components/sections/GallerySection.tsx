@@ -35,6 +35,7 @@ export default function GallerySection() {
 
   useEffect(() => {
     fetchPhotos();
+    setExpanded(false);
   }, [category]);
 
   // Cleanup preview blob URL on unmount
@@ -196,6 +197,7 @@ export default function GallerySection() {
   };
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const handleDelete = async (id: string) => {
     try {
@@ -309,7 +311,7 @@ export default function GallerySection() {
 
       {/* Photo grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {photos.map((photo) => (
+        {(expanded ? photos : photos.slice(0, 8)).map((photo) => (
           <button
             key={photo.id}
             onClick={() => setSelectedPhoto(photo)}
@@ -329,6 +331,17 @@ export default function GallerySection() {
           </button>
         ))}
       </div>
+
+      {!expanded && photos.length > 8 && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setExpanded(true)}
+            className="rounded-lg border border-neon-pink/30 px-4 py-2 text-sm text-neon-pink transition-colors hover:bg-neon-pink/10"
+          >
+            View {photos.length - 8} more photos
+          </button>
+        </div>
+      )}
 
       {photos.length === 0 && (
         <p className="mt-8 text-center text-sm text-gray-600">No photos yet. Upload the first!</p>
