@@ -12,9 +12,8 @@ interface ScheduleSectionProps {
 
 export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
   const [events, setEvents] = useState<EventWithVotes[]>([]);
-  const [activeDay, setActiveDay] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [allExpanded, setAllExpanded] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     club: "",
@@ -33,18 +32,12 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
       const res = await fetch("/api/events");
       const data = await res.json();
       setEvents(data);
-      if (data.length > 0 && !activeDay) {
-        setActiveDay(data[0].date);
-      }
     } catch {
       // ignore
     }
   };
 
   const days = [...new Set(events.map((e) => e.date))].sort();
-  const dayEvents = events
-    .filter((e) => e.date === activeDay)
-    .sort((a, b) => b.vote_count - a.vote_count);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +153,6 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
             const evts = events
               .filter((e) => e.date === day)
               .sort((a, b) => b.vote_count - a.vote_count);
-            const isExpanded = expandedDays.has(day);
             const hiddenCount = evts.length - DESKTOP_DEFAULT;
 
             return (
@@ -179,7 +171,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                         idx === 0 && event.vote_count > 0
                           ? "border-neon-pink/40 bg-neon-pink/5"
                           : "border-[var(--border)] bg-surface"
-                      } ${idx >= DESKTOP_DEFAULT && !isExpanded ? "hidden" : ""}`}
+                      } ${idx >= DESKTOP_DEFAULT && !allExpanded ? "hidden" : ""}`}
                     >
                       {idx === 0 && event.vote_count > 0 && (
                         <span className="mb-0.5 inline-block text-[10px] text-neon-pink">★ Top pick</span>
@@ -226,15 +218,10 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                 {/* Expand if >8 events in this day */}
                 {hiddenCount > 0 && (
                   <button
-                    onClick={() => {
-                      const next = new Set(expandedDays);
-                      if (isExpanded) next.delete(day);
-                      else next.add(day);
-                      setExpandedDays(next);
-                    }}
+                    onClick={() => setAllExpanded(!allExpanded)}
                     className="mt-2 w-full rounded-lg border border-[var(--border)] py-1.5 text-center text-[10px] text-gray-400 transition-colors hover:text-neon-pink"
                   >
-                    {isExpanded ? "Show less" : `+${hiddenCount} more`}
+                    {allExpanded ? "Show less" : `+${hiddenCount} more`}
                   </button>
                 )}
 
@@ -251,8 +238,8 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
       <MobileSchedule
         days={days}
         events={events}
-        expandedDays={expandedDays}
-        setExpandedDays={setExpandedDays}
+        allExpanded={allExpanded}
+        setAllExpanded={setAllExpanded}
         isAdmin={isAdmin}
         handleDelete={handleDelete}
         formatDate={formatDate}
@@ -269,16 +256,16 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
 function MobileSchedule({
   days,
   events,
-  expandedDays,
-  setExpandedDays,
+  allExpanded,
+  setAllExpanded,
   isAdmin,
   handleDelete,
   formatDate,
 }: {
   days: string[];
   events: EventWithVotes[];
-  expandedDays: Set<string>;
-  setExpandedDays: (s: Set<string>) => void;
+  allExpanded: boolean;
+  setAllExpanded: (v: boolean) => void;
   isAdmin: boolean;
   handleDelete: (id: string) => void;
   formatDate: (d: string) => string;
@@ -332,7 +319,6 @@ function MobileSchedule({
           const evts = events
             .filter((e) => e.date === day)
             .sort((a, b) => b.vote_count - a.vote_count);
-          const isExpanded = expandedDays.has(day);
           const hiddenCount = evts.length - MOBILE_DEFAULT;
 
           return (
@@ -345,7 +331,7 @@ function MobileSchedule({
                       idx === 0 && event.vote_count > 0
                         ? "border-neon-pink/40 bg-neon-pink/5"
                         : "border-[var(--border)] bg-surface"
-                    } ${idx >= MOBILE_DEFAULT && !isExpanded ? "hidden" : ""}`}
+                    } ${idx >= MOBILE_DEFAULT && !allExpanded ? "hidden" : ""}`}
                   >
                     {idx === 0 && event.vote_count > 0 && (
                       <span className="mb-1 inline-block text-xs text-neon-pink">★ Top pick</span>
@@ -392,15 +378,10 @@ function MobileSchedule({
 
               {hiddenCount > 0 && (
                 <button
-                  onClick={() => {
-                    const next = new Set(expandedDays);
-                    if (isExpanded) next.delete(day);
-                    else next.add(day);
-                    setExpandedDays(next);
-                  }}
+                  onClick={() => setAllExpanded(!allExpanded)}
                   className="mt-3 w-full rounded-lg border border-[var(--border)] py-2 text-center text-sm text-gray-400 transition-colors hover:text-neon-pink"
                 >
-                  {isExpanded ? "Show less" : `Show ${hiddenCount} more events`}
+                  {allExpanded ? "Show less" : `Show ${hiddenCount} more events`}
                 </button>
               )}
 
