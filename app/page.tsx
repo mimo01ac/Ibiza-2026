@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import CountdownTimer from "./components/CountdownTimer";
 import ConfirmedParticipants from "./components/ConfirmedParticipants";
 import AllSections from "./components/sections/AllSections";
+import InstallGuide from "./components/InstallGuide";
 import LandingPage from "./components/LandingPage";
 
 export default async function Home() {
@@ -69,6 +70,9 @@ export default async function Home() {
 
       {/* All feature sections */}
       <AllSections isAdmin={isAdmin} />
+
+      {/* PWA install guide (mobile only) */}
+      <InstallGuide />
 
       {/* Footer */}
       <footer className="border-t border-[var(--border)] py-8 text-center text-xs text-gray-600">

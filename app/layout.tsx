@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
 import Navbar from "./components/Navbar";
@@ -16,6 +17,23 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Ibiza 2026",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192" },
+      { url: "/icons/icon-512.png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/icons/icon-192.png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0f",
 };
 
 export default function RootLayout({
@@ -32,6 +50,13 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
         </Providers>
+        <Script
+          id="sw-register"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
+          }}
+        />
       </body>
     </html>
   );
