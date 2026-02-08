@@ -9,6 +9,8 @@ function normalizeGuestName(name: string): string {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
+  debug: process.env.NODE_ENV !== "production",
+  pages: { error: "/auth/error" },
   session: { strategy: "jwt" },
   providers: [
     Facebook,
@@ -54,18 +56,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           `https://graph.facebook.com/${profile.id}/picture?type=large`;
 
         // Store Facebook user ID on the profile for GDPR data deletion lookups.
-        // Fire-and-forget — we don't await so it doesn't slow down login.
+        // Fire-and-forget — wrapped in try-catch so it never crashes the JWT callback.
         if (profile.id && user?.email) {
-          const supabase = createAdminClient();
-          supabase
-            .from("profiles")
-            .update({ facebook_id: String(profile.id) })
-            .eq("auth_user_email", user.email)
-            .then(({ error }) => {
-              if (error) {
-                console.warn("[auth] Failed to store facebook_id:", error.message);
-              }
-            });
+          try {
+            const supabase = createAdminClient();
+            supabase
+              .from("profiles")
+              .update({ facebook_id: String(profile.id) })
+              .eq("auth_user_email", user.email)
+              .then(({ error }) => {
+                if (error) {
+                  console.warn("[auth] Failed to store facebook_id:", error.message);
+                }
+              });
+          } catch (e) {
+            console.warn("[auth] Supabase call failed in jwt callback:", e);
+          }
         }
       }
       if (user) {
