@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import PageHeader from "../PageHeader";
 import Modal from "../Modal";
+import { useToast } from "../Toast";
 import type { GalleryPhoto } from "@/lib/types/database";
 
 const CATEGORIES = [
   { key: "past_trips", label: "Past Trips" },
   { key: "ibiza_2026", label: "Ibiza 2026" },
 ] as const;
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ACCEPTED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export default function GallerySection() {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
@@ -19,10 +23,26 @@ export default function GallerySection() {
   const [uploadStatus, setUploadStatus] = useState("");
   const [caption, setCaption] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const toast = useToast();
+
+  // New state for drag-and-drop + preview + progress
+  const [dragActive, setDragActive] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
 
   useEffect(() => {
     fetchPhotos();
   }, [category]);
+
+  // Cleanup preview blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   const fetchPhotos = async () => {
     try {
@@ -34,15 +54,41 @@ export default function GallerySection() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Validate file before upload
+  const validateFile = (file: File): string | null => {
+    if (!ACCEPTED_MIME.includes(file.type)) {
+      return "Unsupported format. Use JPEG, PNG, WebP, or GIF.";
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 10MB.`;
+    }
+    return null;
+  };
+
+  // Process file from either input or drop
+  const processFile = (file: File) => {
+    const error = validateFile(file);
+    if (error) {
+      toast.error(error);
+      setUploadError(error);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    startUpload(file, url);
+  };
+
+  // Main upload flow with progress tracking
+  const startUpload = async (file: File, previewUrl: string) => {
     setUploading(true);
     setUploadError("");
+    setUploadProgress(10);
 
     try {
       // Step 1: Get a signed upload URL
       setUploadStatus("Getting upload URL...");
+      setUploadProgress(15);
       const urlRes = await fetch("/api/gallery/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,12 +96,13 @@ export default function GallerySection() {
       });
       if (!urlRes.ok) {
         const d = await urlRes.json().catch(() => ({}));
-        throw new Error(d.error || `Step 1 failed (${urlRes.status})`);
+        throw new Error(d.error || `Failed to get upload URL`);
       }
       const { signedUrl, token, filePath } = await urlRes.json();
+      setUploadProgress(33);
 
       // Step 2: Upload file directly to Supabase Storage
-      setUploadStatus("Uploading to storage...");
+      setUploadStatus("Uploading...");
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
@@ -63,11 +110,12 @@ export default function GallerySection() {
       });
       if (!uploadRes.ok) {
         const text = await uploadRes.text().catch(() => "");
-        throw new Error(`Step 2 failed (${uploadRes.status}): ${text.slice(0, 200)}`);
+        throw new Error(`Upload failed: ${text.slice(0, 200)}`);
       }
+      setUploadProgress(75);
 
       // Step 3: Create gallery record in database
-      setUploadStatus("Saving photo record...");
+      setUploadStatus("Saving...");
       const recordRes = await fetch("/api/gallery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,19 +127,72 @@ export default function GallerySection() {
       });
       if (!recordRes.ok) {
         const d = await recordRes.json().catch(() => ({}));
-        throw new Error(d.error || `Step 3 failed (${recordRes.status})`);
+        throw new Error(d.error || `Failed to save photo record`);
       }
 
+      setUploadProgress(100);
       setUploadStatus("");
       setCaption("");
       fetchPhotos();
+      toast.success("Photo uploaded!");
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 600);
+
+      // Clear preview after brief success display
+      setTimeout(() => {
+        URL.revokeObjectURL(previewUrl);
+        setPreview(null);
+        setUploadProgress(0);
+      }, 1000);
     } catch (err) {
       setUploadStatus("");
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      setUploadProgress(0);
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setUploadError(msg);
+      toast.error(msg);
+      URL.revokeObjectURL(previewUrl);
+      setPreview(null);
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  };
+
+  // Drag-and-drop handlers (using counter for nested element support)
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    setDragActive(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    e.target.value = "";
   };
 
   const handleDelete = async (id: string) => {
@@ -108,8 +209,8 @@ export default function GallerySection() {
     <section id="gallery" className="scroll-mt-20 py-16">
       <PageHeader title="GALLERY" subtitle="Memories from past trips and this one" color="pink" />
 
-      {/* Category tabs + upload */}
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+      {/* Category tabs */}
+      <div className="mb-4 flex justify-center">
         <div className="flex rounded-lg border border-[var(--border)]">
           {CATEGORIES.map((cat) => (
             <button
@@ -125,26 +226,78 @@ export default function GallerySection() {
             </button>
           ))}
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Caption (optional)"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="rounded-lg border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-pink"
-          />
-          <label className="cursor-pointer rounded-lg border border-neon-pink bg-neon-pink/10 px-4 py-2 text-sm font-semibold text-neon-pink transition-colors hover:bg-neon-pink/20">
-            {uploading ? (uploadStatus || "Uploading...") : "Upload"}
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleUpload}
-              disabled={uploading}
+      {/* Upload zone — drag-and-drop + click to browse */}
+      <div
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        className={`mb-6 cursor-pointer rounded-xl border-2 border-dashed transition-all ${
+          dragActive
+            ? "border-neon-pink bg-neon-pink/5"
+            : showSuccess
+              ? "border-neon-cyan bg-neon-cyan/5"
+              : "border-[var(--border)] hover:border-neon-pink/30"
+        } ${showSuccess ? "success-flash" : ""}`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleFileSelect}
+          disabled={uploading}
+        />
+
+        {preview ? (
+          /* Preview + progress bar */
+          <div className="flex items-center gap-4 p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt="Upload preview"
+              className="h-20 w-20 shrink-0 rounded-lg object-cover"
             />
-          </label>
-        </div>
+            <div className="min-w-0 flex-1">
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
+                <div
+                  className="h-full rounded-full bg-neon-pink transition-all duration-500 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="mt-1.5 truncate text-xs text-gray-400">
+                {uploadProgress >= 100 ? "Done!" : uploadStatus || "Preparing..."}
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Default drop zone */
+          <div className="px-4 py-8 text-center">
+            {/* Upload icon */}
+            <svg className="mx-auto mb-2 h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <p className="text-sm text-gray-300">
+              {dragActive ? "Drop image to upload" : "Drag & drop an image, or click to browse"}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              JPEG, PNG, WebP, GIF — Max 10 MB
+            </p>
+
+            {/* Caption input (inside zone but stop propagation so clicks don't trigger file dialog) */}
+            <input
+              type="text"
+              placeholder="Caption (optional)"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-3 mx-auto block w-full max-w-xs rounded-lg border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-pink"
+            />
+          </div>
+        )}
       </div>
 
       {uploadError && (

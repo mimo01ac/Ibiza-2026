@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PageHeader from "../PageHeader";
+import { useToast } from "../Toast";
 import type { Flight } from "@/lib/types/database";
 
 const TRIP_START = "2026-06-25";
@@ -22,6 +23,7 @@ export default function FlightsSection() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [view, setView] = useState<"table" | "timeline">("table");
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     arrival_date: "",
     arrival_time: "",
@@ -31,6 +33,7 @@ export default function FlightsSection() {
     flight_number_out: "",
     notes: "",
   });
+  const toast = useToast();
 
   useEffect(() => {
     fetchFlights();
@@ -42,12 +45,13 @@ export default function FlightsSection() {
       const data = await res.json();
       setFlights(data);
     } catch {
-      // ignore
+      toast.error("Failed to load flights.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const res = await fetch("/api/flights", {
         method: "POST",
@@ -57,9 +61,15 @@ export default function FlightsSection() {
       if (res.ok) {
         setShowForm(false);
         fetchFlights();
+        toast.success("Flight saved!");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to save flight.");
       }
     } catch {
-      // ignore
+      toast.error("Failed to save flight.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,53 +187,115 @@ export default function FlightsSection() {
           />
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-neon-cyan px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+            disabled={saving}
+            className="mt-4 flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            Save Flight
+            {saving && (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            {saving ? "Saving..." : "Save Flight"}
           </button>
         </form>
       )}
 
       {view === "table" ? (
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--border)] bg-surface">
-              <tr>
-                <th className="px-4 py-3 text-gray-500">Who</th>
-                <th className="px-4 py-3 text-gray-500">Arrival</th>
-                <th className="px-4 py-3 text-gray-500">Departure</th>
-                <th className="hidden px-4 py-3 text-gray-500 sm:table-cell">Flight In</th>
-                <th className="hidden px-4 py-3 text-gray-500 sm:table-cell">Flight Out</th>
-                <th className="hidden px-4 py-3 text-gray-500 md:table-cell">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flights.map((f) => (
-                <tr key={f.id} className="border-b border-[var(--border)] last:border-0">
-                  <td className="px-4 py-3 font-medium text-neon-cyan">
-                    {f.profile?.display_name ?? "Unknown"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">
-                    {f.arrival_date} {f.arrival_time && <span className="text-gray-500">{f.arrival_time}</span>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">
-                    {f.departure_date} {f.departure_time && <span className="text-gray-500">{f.departure_time}</span>}
-                  </td>
-                  <td className="hidden px-4 py-3 text-gray-400 sm:table-cell">{f.flight_number_in ?? "—"}</td>
-                  <td className="hidden px-4 py-3 text-gray-400 sm:table-cell">{f.flight_number_out ?? "—"}</td>
-                  <td className="hidden px-4 py-3 text-gray-500 md:table-cell">{f.notes ?? "—"}</td>
-                </tr>
-              ))}
-              {flights.length === 0 && (
+        <>
+          {/* Mobile cards */}
+          <div className="space-y-3 md:hidden">
+            {flights.map((f) => (
+              <div key={f.id} className="rounded-xl border border-[var(--border)] bg-surface p-4">
+                <p className="mb-2 font-semibold text-neon-cyan">
+                  {f.profile?.display_name ?? "Unknown"}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Arrival</p>
+                    <p className="text-gray-300">
+                      {f.arrival_date}
+                      {f.arrival_time && <span className="ml-1 text-gray-500">{f.arrival_time}</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Departure</p>
+                    <p className="text-gray-300">
+                      {f.departure_date}
+                      {f.departure_time && <span className="ml-1 text-gray-500">{f.departure_time}</span>}
+                    </p>
+                  </div>
+                </div>
+                {(f.flight_number_in || f.flight_number_out) && (
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                    {f.flight_number_in && (
+                      <div>
+                        <p className="text-xs text-gray-500">Flight In</p>
+                        <p className="text-gray-400">{f.flight_number_in}</p>
+                      </div>
+                    )}
+                    {f.flight_number_out && (
+                      <div>
+                        <p className="text-xs text-gray-500">Flight Out</p>
+                        <p className="text-gray-400">{f.flight_number_out}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {f.notes && (
+                  <>
+                    <div className="my-2 border-t border-[var(--border)]" />
+                    <p className="text-xs text-gray-500">{f.notes}</p>
+                  </>
+                )}
+              </div>
+            ))}
+            {flights.length === 0 && (
+              <p className="py-8 text-center text-sm text-gray-600">No flights added yet.</p>
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] md:block">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-[var(--border)] bg-surface">
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
-                    No flights added yet.
-                  </td>
+                  <th className="px-4 py-3 text-gray-500">Who</th>
+                  <th className="px-4 py-3 text-gray-500">Arrival</th>
+                  <th className="px-4 py-3 text-gray-500">Departure</th>
+                  <th className="px-4 py-3 text-gray-500">Flight In</th>
+                  <th className="px-4 py-3 text-gray-500">Flight Out</th>
+                  <th className="px-4 py-3 text-gray-500">Notes</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {flights.map((f) => (
+                  <tr key={f.id} className="border-b border-[var(--border)] last:border-0">
+                    <td className="px-4 py-3 font-medium text-neon-cyan">
+                      {f.profile?.display_name ?? "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300">
+                      {f.arrival_date} {f.arrival_time && <span className="text-gray-500">{f.arrival_time}</span>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300">
+                      {f.departure_date} {f.departure_time && <span className="text-gray-500">{f.departure_time}</span>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">{f.flight_number_in ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-400">{f.flight_number_out ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-500">{f.notes ?? "—"}</td>
+                  </tr>
+                ))}
+                {flights.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
+                      No flights added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
         /* Timeline view */
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-surface p-4">

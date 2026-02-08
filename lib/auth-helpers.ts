@@ -23,7 +23,21 @@ export async function getProfileByEmail(
     .eq("auth_user_email", email)
     .single();
 
-  if (existing) return existing as Profile;
+  if (existing) {
+    // Refresh avatar if it changed or was previously stored as garbage
+    if (
+      image &&
+      image !== existing.avatar_url &&
+      image.startsWith("http")
+    ) {
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: image })
+        .eq("id", existing.id);
+      existing.avatar_url = image;
+    }
+    return existing as Profile;
+  }
 
   const { data: created, error } = await supabase
     .from("profiles")

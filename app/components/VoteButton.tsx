@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useToast } from "./Toast";
 
 interface VoteButtonProps {
   entityId: string;
@@ -18,6 +19,18 @@ export default function VoteButton({
   const [count, setCount] = useState(initialCount);
   const [voted, setVoted] = useState(initialVoted);
   const [loading, setLoading] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const toast = useToast();
+  const prevCount = useRef(initialCount);
+
+  useEffect(() => {
+    if (count !== prevCount.current) {
+      setAnimating(true);
+      const timer = setTimeout(() => setAnimating(false), 300);
+      prevCount.current = count;
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
 
   const handleVote = async () => {
     if (loading) return;
@@ -34,6 +47,7 @@ export default function VoteButton({
         // Revert on failure
         setVoted(voted);
         setCount(count);
+        toast.error("Vote failed");
       } else {
         const data = await res.json();
         setCount(data.vote_count);
@@ -42,6 +56,7 @@ export default function VoteButton({
     } catch {
       setVoted(voted);
       setCount(count);
+      toast.error("Vote failed");
     } finally {
       setLoading(false);
     }
@@ -51,10 +66,10 @@ export default function VoteButton({
     <button
       onClick={handleVote}
       disabled={loading}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all ${
+      className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all ${
         voted
           ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan neon-glow-cyan"
-          : "border-[var(--border)] text-gray-400 hover:border-neon-cyan hover:text-neon-cyan"
+          : "border-[var(--border)] text-gray-400 hover:border-neon-cyan/50 hover:text-neon-cyan/70 hover:shadow-[0_0_8px_rgba(0,240,255,0.15)]"
       }`}
     >
       <svg className="h-4 w-4" fill={voted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
@@ -65,7 +80,7 @@ export default function VoteButton({
           d="M5 15l7-7 7 7"
         />
       </svg>
-      {count}
+      <span className={animating ? "vote-pulse" : ""}>{count}</span>
     </button>
   );
 }

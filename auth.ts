@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Facebook from "next-auth/providers/facebook";
 import Credentials from "next-auth/providers/credentials";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function normalizeGuestName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, "-");
@@ -43,9 +44,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     jwt({ token, user, profile }) {
       if (profile) {
+        // Facebook returns picture as { data: { url: "..." } }, not a string.
+        // Auth.js normalizes it to user.image via the provider's profile() fn.
+        const fbPic = (profile as Record<string, any>).picture;
         token.picture =
-          (profile as Record<string, unknown>).picture?.toString() ??
+          user?.image ??
+          (typeof fbPic === "string" ? fbPic : fbPic?.data?.url) ??
           `https://graph.facebook.com/${profile.id}/picture?type=large`;
+
+        // Store Facebook user ID on the profile for GDPR data deletion lookups.
+        // Fire-and-forget — we don't await so it doesn't slow down login.
+        if (profile.id && user?.email) {
+          const supabase = createAdminClient();
+          supabase
+            .from("profiles")
+            .update({ facebook_id: String(profile.id) })
+            .eq("auth_user_email", user.email)
+            .then(({ error }) => {
+              if (error) {
+                console.warn("[auth] Failed to store facebook_id:", error.message);
+              }
+            });
+        }
       }
       if (user) {
         token.name = user.name;

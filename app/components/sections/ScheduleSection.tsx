@@ -167,23 +167,28 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                   {evts.map((event, idx) => (
                     <div
                       key={event.id}
-                      className={`rounded-xl border p-2 ${
+                      className={`rounded-xl border p-3 ${
                         idx === 0 && event.vote_count > 0
                           ? "border-neon-pink/40 bg-neon-pink/5"
                           : "border-[var(--border)] bg-surface"
                       } ${idx >= DESKTOP_DEFAULT && !allExpanded ? "hidden" : ""}`}
                     >
                       {idx === 0 && event.vote_count > 0 && (
-                        <span className="mb-0.5 inline-block text-[10px] text-neon-pink">★ Top pick</span>
+                        <span className="mb-1 inline-block text-[10px] font-semibold text-neon-pink">★ Top pick</span>
                       )}
-                      <h4 className="text-xs font-semibold leading-tight text-foreground">
+                      <h4 className="text-sm font-bold leading-snug text-foreground">
                         {event.title}
                       </h4>
-                      <p className="mt-0.5 text-[10px] text-neon-cyan">{event.club}</p>
+                      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-neon-cyan">
+                        {event.club}
+                      </p>
                       {event.time && (
-                        <p className="text-[10px] text-gray-500">{event.time}</p>
+                        <p className="mt-0.5 text-[11px] text-gray-500">{event.time}</p>
                       )}
-                      <div className="mt-1.5 flex items-center gap-1">
+                      {event.description && (
+                        <p className="mt-1 line-clamp-1 text-[11px] text-gray-400">{event.description}</p>
+                      )}
+                      <div className="mt-2 border-t border-[var(--border)] pt-2 flex items-center gap-1">
                         <VoteButton
                           entityId={event.id}
                           initialCount={event.vote_count}
@@ -195,7 +200,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                             href={event.ticket_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded border border-neon-purple/30 px-1 py-0.5 text-[10px] text-neon-purple transition-colors hover:bg-neon-purple/10"
+                            className="rounded border border-neon-purple/30 px-1.5 py-0.5 text-[10px] text-neon-purple transition-colors hover:bg-neon-purple/10"
                           >
                             Tickets
                           </a>
@@ -334,28 +339,30 @@ function MobileSchedule({
 
           return (
             <div key={day} className="w-full shrink-0 snap-center px-1">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {evts.map((event, idx) => (
                   <div
                     key={event.id}
-                    className={`rounded-xl border p-3 ${
+                    className={`rounded-xl border p-4 ${
                       idx === 0 && event.vote_count > 0
                         ? "border-neon-pink/40 bg-neon-pink/5"
                         : "border-[var(--border)] bg-surface"
                     } ${idx >= MOBILE_DEFAULT && !allExpanded ? "hidden" : ""}`}
                   >
                     {idx === 0 && event.vote_count > 0 && (
-                      <span className="mb-1 inline-block text-xs text-neon-pink">★ Top pick</span>
+                      <span className="mb-1 inline-block text-xs font-semibold text-neon-pink">★ Top pick</span>
                     )}
-                    <h4 className="text-sm font-semibold leading-tight text-foreground">
+                    <h4 className="text-base font-bold leading-snug text-foreground">
                       {event.title}
                     </h4>
-                    <p className="mt-0.5 text-xs text-neon-cyan">{event.club}</p>
-                    {event.time && <p className="text-xs text-gray-500">{event.time}</p>}
+                    <p className="mt-1 text-sm font-medium uppercase tracking-wide text-neon-cyan">
+                      {event.club}
+                    </p>
+                    {event.time && <p className="mt-0.5 text-xs text-gray-500">{event.time}</p>}
                     {event.description && (
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-400">{event.description}</p>
+                      <p className="mt-1.5 line-clamp-2 text-sm text-gray-400">{event.description}</p>
                     )}
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-3 border-t border-[var(--border)] pt-3 flex items-center gap-2">
                       <VoteButton
                         entityId={event.id}
                         initialCount={event.vote_count}
