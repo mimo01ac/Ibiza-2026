@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import PageHeader from "../PageHeader";
 import VoteButton from "../VoteButton";
 import CommentSection from "../CommentSection";
@@ -247,35 +247,98 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
         </div>
       )}
 
-      {/* ═══ MOBILE: Day tabs + 1-col list, expand after 2 ═══ */}
-      <div className="md:hidden">
-        {days.length > 0 && (
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
-            {days.map((day) => (
-              <button
-                key={day}
-                onClick={() => setActiveDay(day)}
-                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  activeDay === day
-                    ? "bg-neon-pink/20 text-neon-pink neon-glow-pink"
-                    : "border border-[var(--border)] text-gray-400 hover:text-neon-pink"
-                }`}
-              >
-                {formatDate(day)}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* ═══ MOBILE: Horizontal swipe between days ═══ */}
+      <MobileSchedule
+        days={days}
+        events={events}
+        expandedDays={expandedDays}
+        setExpandedDays={setExpandedDays}
+        isAdmin={isAdmin}
+        handleDelete={handleDelete}
+        formatDate={formatDate}
+      />
 
-        {(() => {
+      {events.length === 0 && (
+        <p className="text-center text-sm text-gray-600">No events added yet.</p>
+      )}
+    </section>
+  );
+}
+
+/* ── Mobile swipeable schedule ── */
+function MobileSchedule({
+  days,
+  events,
+  expandedDays,
+  setExpandedDays,
+  isAdmin,
+  handleDelete,
+  formatDate,
+}: {
+  days: string[];
+  events: EventWithVotes[];
+  expandedDays: Set<string>;
+  setExpandedDays: (s: Set<string>) => void;
+  isAdmin: boolean;
+  handleDelete: (id: string) => void;
+  formatDate: (d: string) => string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveIndex(idx);
+  }, []);
+
+  const scrollToDay = (idx: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  };
+
+  if (days.length === 0) return null;
+
+  return (
+    <div className="md:hidden">
+      {/* Date indicator tabs */}
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+        {days.map((day, i) => (
+          <button
+            key={day}
+            onClick={() => scrollToDay(i)}
+            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              activeIndex === i
+                ? "bg-neon-pink/20 text-neon-pink neon-glow-pink"
+                : "border border-[var(--border)] text-gray-400 hover:text-neon-pink"
+            }`}
+          >
+            {formatDate(day)}
+          </button>
+        ))}
+      </div>
+
+      {/* Swipeable day panels */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        {days.map((day) => {
           const MOBILE_DEFAULT = 2;
-          const isExpanded = activeDay ? expandedDays.has(activeDay) : false;
-          const hiddenCount = dayEvents.length - MOBILE_DEFAULT;
+          const evts = events
+            .filter((e) => e.date === day)
+            .sort((a, b) => b.vote_count - a.vote_count);
+          const isExpanded = expandedDays.has(day);
+          const hiddenCount = evts.length - MOBILE_DEFAULT;
 
           return (
-            <>
+            <div key={day} className="w-full shrink-0 snap-center px-1">
               <div className="space-y-2">
-                {dayEvents.map((event, idx) => (
+                {evts.map((event, idx) => (
                   <div
                     key={event.id}
                     className={`rounded-xl border p-3 ${
@@ -291,9 +354,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                       {event.title}
                     </h4>
                     <p className="mt-0.5 text-xs text-neon-cyan">{event.club}</p>
-                    {event.time && (
-                      <p className="text-xs text-gray-500">{event.time}</p>
-                    )}
+                    {event.time && <p className="text-xs text-gray-500">{event.time}</p>}
                     {event.description && (
                       <p className="mt-1 line-clamp-2 text-xs text-gray-400">{event.description}</p>
                     )}
@@ -329,12 +390,12 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                 ))}
               </div>
 
-              {hiddenCount > 0 && activeDay && (
+              {hiddenCount > 0 && (
                 <button
                   onClick={() => {
                     const next = new Set(expandedDays);
-                    if (isExpanded) next.delete(activeDay);
-                    else next.add(activeDay);
+                    if (isExpanded) next.delete(day);
+                    else next.add(day);
                     setExpandedDays(next);
                   }}
                   className="mt-3 w-full rounded-lg border border-[var(--border)] py-2 text-center text-sm text-gray-400 transition-colors hover:text-neon-pink"
@@ -343,17 +404,26 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
                 </button>
               )}
 
-              {dayEvents.length === 0 && activeDay && (
-                <p className="text-center text-sm text-gray-600">No events for this day yet.</p>
+              {evts.length === 0 && (
+                <p className="py-4 text-center text-sm text-gray-600">No events for this day yet.</p>
               )}
-            </>
+            </div>
           );
-        })()}
+        })}
       </div>
 
-      {events.length === 0 && (
-        <p className="text-center text-sm text-gray-600">No events added yet.</p>
-      )}
-    </section>
+      {/* Dot indicators */}
+      <div className="mt-3 flex justify-center gap-1.5">
+        {days.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => scrollToDay(i)}
+            className={`h-1.5 rounded-full transition-all ${
+              activeIndex === i ? "w-4 bg-neon-pink" : "w-1.5 bg-gray-600"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
