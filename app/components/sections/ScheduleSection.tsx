@@ -271,6 +271,7 @@ function MobileSchedule({
   formatDate: (d: string) => string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const handleScroll = useCallback(() => {
@@ -279,6 +280,16 @@ function MobileSchedule({
     const idx = Math.round(el.scrollLeft / el.clientWidth);
     setActiveIndex(idx);
   }, []);
+
+  // Auto-scroll date tabs to keep active tab visible when swiping events
+  useEffect(() => {
+    const container = tabsRef.current;
+    if (!container) return;
+    const tab = container.children[activeIndex] as HTMLElement | undefined;
+    if (!tab) return;
+    const left = tab.offsetLeft - container.offsetWidth / 2 + tab.offsetWidth / 2;
+    container.scrollTo({ left, behavior: "smooth" });
+  }, [activeIndex]);
 
   const scrollToDay = (idx: number) => {
     const el = scrollRef.current;
@@ -291,7 +302,7 @@ function MobileSchedule({
   return (
     <div className="md:hidden">
       {/* Date indicator tabs */}
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+      <div ref={tabsRef} className="mb-4 flex gap-2 overflow-x-auto pb-2">
         {days.map((day, i) => (
           <button
             key={day}
