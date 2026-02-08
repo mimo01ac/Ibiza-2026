@@ -47,7 +47,7 @@ export default function VoterAvatars({
       <button
         onClick={() => setShowModal(true)}
         className="flex items-center -space-x-1.5 transition-opacity hover:opacity-80"
-        title="See who's going"
+        title="See who voted"
       >
         {shown.map((v) => (
           <div key={v.id} className="ring-1 ring-background rounded-full">
@@ -64,7 +64,7 @@ export default function VoterAvatars({
       <Modal open={showModal} onClose={() => setShowModal(false)}>
         <div className="w-80 rounded-xl border border-[var(--border)] bg-surface p-6">
           <h3 className="mb-4 text-sm font-semibold text-foreground">
-            Who&apos;s going ({voters.length})
+            Voted ({voters.length})
           </h3>
           <div className="grid grid-cols-3 gap-4">
             {voters.map((v) => (
