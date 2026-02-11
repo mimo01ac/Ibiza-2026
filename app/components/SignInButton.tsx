@@ -71,7 +71,7 @@ export default function SignInButton() {
               disabled={loading}
               className="rounded-lg border border-neon-purple/50 bg-neon-purple/10 px-4 py-2 text-sm font-semibold text-neon-purple transition-all hover:bg-neon-purple/20 disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Join as Guest"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
         </div>

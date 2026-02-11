@@ -75,7 +75,7 @@ export default function ScheduleSection({ isAdmin }: ScheduleSectionProps) {
 
   return (
     <section id="schedule" className="scroll-mt-20 py-16">
-      <PageHeader title="CLUB SCHEDULE" subtitle="Vote for the nights you want" color="pink" />
+      <PageHeader title="CLUB SCHEDULE" subtitle="Vote for your favorites — it will help us put the final program together" color="pink" />
 
       {isAdmin && (
         <div className="mb-6 text-center">

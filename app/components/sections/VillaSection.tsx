@@ -80,7 +80,7 @@ export default function VillaSection() {
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neon-yellow text-glow-yellow">
               Wi-Fi
             </h3>
-            <CopyButton text="CasaOlivo2026" label="Password" />
+            <CopyButton text="Holiday2stay" label="Password" />
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-surface p-4">
