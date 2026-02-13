@@ -38,63 +38,71 @@ export async function POST(req: NextRequest) {
             max_uses: 10,
           },
         ],
-        system: `You are a flight search assistant. Search the web for round-trip flights from Copenhagen (CPH) to Ibiza (IBZ).
+        system: `You are a flight search assistant. Your job is to search the web for round-trip flights from Copenhagen (CPH) to Ibiza (IBZ).
 
-Rules:
-- Search for flights on the specific dates provided
-- Look for flights with max 1 stop and under 8 hours each way
-- Find 3-6 different trip packages sorted by price (cheapest first)
-- Include airlines like SAS, Ryanair, EasyJet, Vueling, Norwegian, Transavia, etc.
-- For each package, provide both outbound (CPH→IBZ) and inbound (IBZ→CPH) legs
-- If 2026 flights are not yet available for booking, note this clearly in data_freshness
+IMPORTANT: There are almost NO direct flights from CPH to IBZ. Most routes connect via Barcelona (BCN), Palma de Mallorca (PMI), Madrid (MAD), Amsterdam (AMS), or other European hubs. You MUST include connecting flights with 1 stop — these are the most common and expected results.
 
-Always respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation).`,
+Search strategy:
+1. Search Skyscanner, Google Flights, Kayak, or Momondo for "Copenhagen to Ibiza" on the given dates
+2. Look for both direct flights (rare, seasonal) AND 1-stop connections
+3. Common connecting routes: CPH→BCN→IBZ, CPH→PMI→IBZ, CPH→MAD→IBZ, CPH→AMS→IBZ
+4. Airlines to look for: SAS, Vueling, Ryanair, EasyJet, Norwegian, Transavia, Eurowings, Iberia
+5. If exact date results are unavailable, search for nearby dates and note this
+
+You MUST return 3-6 packages. If 2026 flights are not yet bookable, return the best available options based on current/seasonal schedules with estimated prices, and explain in data_freshness.
+
+Always respond with ONLY a valid JSON object (no markdown, no code blocks).`,
         messages: [
           {
             role: "user",
-            content: `Search for round-trip flights:
-- Outbound: Copenhagen (CPH) → Ibiza (IBZ) on ${arrival_date}
-- Return: Ibiza (IBZ) → Copenhagen (CPH) on ${departure_date}
+            content: `Find round-trip flights from Copenhagen (CPH) to Ibiza (IBZ):
+- Outbound date: ${arrival_date}
+- Return date: ${departure_date}
 
-Return as JSON:
+Search on Google Flights, Skyscanner, or Kayak for "flights Copenhagen to Ibiza ${arrival_date}" and "flights Ibiza to Copenhagen ${departure_date}". Include 1-stop connecting flights — direct flights are rare on this route.
+
+Return JSON in this exact format:
 {
   "packages": [
     {
       "outbound": {
-        "airline": "Airline Name",
-        "flight_number": "XX123",
+        "airline": "Vueling + SAS",
+        "flight_number": "VY1234 / SK567",
         "departure_airport": "CPH",
         "arrival_airport": "IBZ",
-        "departure_time": "08:30",
+        "departure_time": "06:30",
         "arrival_time": "12:15",
-        "duration": "3h 45m",
-        "stops": 0,
-        "stop_cities": []
-      },
-      "inbound": {
-        "airline": "Airline Name",
-        "flight_number": "XX456",
-        "departure_airport": "IBZ",
-        "arrival_airport": "CPH",
-        "departure_time": "15:00",
-        "arrival_time": "19:30",
-        "duration": "4h 30m",
+        "duration": "5h 45m",
         "stops": 1,
         "stop_cities": ["Barcelona"]
       },
-      "price_eur": 250
+      "inbound": {
+        "airline": "Ryanair + Norwegian",
+        "flight_number": "FR890 / DY123",
+        "departure_airport": "IBZ",
+        "arrival_airport": "CPH",
+        "departure_time": "15:00",
+        "arrival_time": "21:30",
+        "duration": "6h 30m",
+        "stops": 1,
+        "stop_cities": ["Madrid"]
+      },
+      "price_eur": 220
     }
   ],
-  "data_freshness": "Prices from February 2026 searches. Schedules and prices may change.",
-  "search_summary": "Found 4 round-trip options from CPH to IBZ"
+  "data_freshness": "Based on searches in Feb 2026. Prices are estimates and may vary.",
+  "search_summary": "Found 5 round-trip options CPH↔IBZ, mostly via Barcelona and Madrid"
 }
 
 Rules:
 - price_eur: estimated round-trip price per person in EUR
-- stops: 0 for direct, 1 for one stop, etc.
-- stop_cities: array of layover city names (empty for direct)
-- data_freshness: note if 2026 schedules are not yet fully released
-- Return ONLY the JSON object`,
+- stops: 0 for direct, 1 for one stop
+- stop_cities: layover city names (e.g. ["Barcelona"])
+- For connecting flights, combine airline names with " + " and flight numbers with " / "
+- data_freshness: note if schedules are estimated or not yet released
+- MUST return at least 3 packages, prefer 4-6
+- Sort by price ascending
+- Return ONLY the JSON object, nothing else`,
           },
         ],
       }),
@@ -117,6 +125,7 @@ Rules:
     }
 
     if (!textContent) {
+      console.error("No text in AI response. Content blocks:", JSON.stringify(data.content?.map((b: { type: string }) => b.type)));
       return NextResponse.json({ error: "No response from AI" }, { status: 502 });
     }
 
@@ -127,7 +136,18 @@ Rules:
       jsonStr = jsonMatch[0];
     }
 
-    const result = JSON.parse(jsonStr);
+    let result;
+    try {
+      result = JSON.parse(jsonStr);
+    } catch {
+      console.error("Failed to parse AI response as JSON:", textContent.slice(0, 500));
+      return NextResponse.json({ error: "Could not parse flight results" }, { status: 502 });
+    }
+
+    // Ensure packages array exists
+    if (!result.packages || !Array.isArray(result.packages)) {
+      result = { packages: [], data_freshness: result.data_freshness || "Unknown", search_summary: result.search_summary || "No results" };
+    }
 
     return NextResponse.json(result);
   } catch (e) {

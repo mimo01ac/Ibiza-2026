@@ -110,10 +110,23 @@ export default function FlightsSection() {
 
       <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (!showForm && userFlight) {
+              setFormData({
+                arrival_date: userFlight.arrival_date ?? "",
+                arrival_time: userFlight.arrival_time ?? "",
+                departure_date: userFlight.departure_date ?? "",
+                departure_time: userFlight.departure_time ?? "",
+                flight_number_in: userFlight.flight_number_in ?? "",
+                flight_number_out: userFlight.flight_number_out ?? "",
+                notes: userFlight.notes ?? "",
+              });
+            }
+            setShowForm(!showForm);
+          }}
           className="rounded-lg border border-neon-cyan bg-neon-cyan/10 px-4 py-2 text-sm font-semibold text-neon-cyan transition-colors hover:bg-neon-cyan/20"
         >
-          {showForm ? "Cancel" : "Add / Edit My Flight"}
+          {showForm ? "Cancel" : userFlight ? "Edit My Flight" : "Add My Flight"}
         </button>
         {userFlight && (
           <button
