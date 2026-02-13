@@ -86,10 +86,42 @@ function TripAdvisorBadge({ rating, url }: { rating: number | null; url: string 
   return badge;
 }
 
-/* ── Helper: check if URL is an actual image ── */
+/* ── Helper: check if URL looks like an image ── */
 function isImageUrl(url: string | null): boolean {
   if (!url) return false;
   return /\.(jpe?g|png|webp|gif|avif|svg)/i.test(url);
+}
+
+/* ── Image with onError fallback ── */
+function RestaurantImage({
+  src,
+  alt,
+  cuisine,
+  className,
+}: {
+  src: string;
+  alt: string;
+  cuisine: string | null;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className={`flex items-center justify-center bg-gradient-to-br from-surface to-background ${className}`}>
+        <span className="text-4xl opacity-30">{getCuisineIcon(cuisine)}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 /* ── Restaurant Card ── */
@@ -116,9 +148,10 @@ function RestaurantCard({
       {/* Background image */}
       <div className="relative h-44 w-full overflow-hidden">
         {hasImage ? (
-          <img
+          <RestaurantImage
             src={restaurant.image_url!}
             alt={restaurant.name}
+            cuisine={restaurant.cuisine_type}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -211,9 +244,10 @@ function RestaurantDetail({
         {/* Image header */}
         {hasImage ? (
           <div className="relative h-52 w-full">
-            <img
+            <RestaurantImage
               src={restaurant.image_url!}
               alt={restaurant.name}
+              cuisine={restaurant.cuisine_type}
               className="h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
@@ -473,10 +507,11 @@ function AddRestaurantForm({
       {preview && (
         <div className="mt-4 rounded-xl border border-neon-yellow/20 bg-neon-yellow/5 p-4">
           <div className="flex gap-4">
-            {preview.image_url && (
-              <img
+            {preview.image_url && isImageUrl(preview.image_url) && (
+              <RestaurantImage
                 src={preview.image_url}
                 alt={preview.name}
+                cuisine={preview.cuisine_type}
                 className="h-24 w-24 shrink-0 rounded-lg object-cover"
               />
             )}
