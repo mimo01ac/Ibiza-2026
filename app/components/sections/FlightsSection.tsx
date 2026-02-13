@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import PageHeader from "../PageHeader";
 import UserAvatar from "../UserAvatar";
 import { useToast } from "../Toast";
-import FlightSearchModal from "../FlightSearchModal";
+// import FlightSearchModal from "../FlightSearchModal";
 import type { Flight } from "@/lib/types/database";
 
 const TRIP_START = "2026-06-25";
@@ -27,7 +27,7 @@ export default function FlightsSection() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [view, setView] = useState<"table" | "timeline">("table");
   const [showForm, setShowForm] = useState(false);
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  // const [showSearchModal, setShowSearchModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     arrival_date: "",
@@ -128,6 +128,7 @@ export default function FlightsSection() {
         >
           {showForm ? "Cancel" : userFlight ? "Edit My Flight" : "Add My Flight"}
         </button>
+        {/* Flight search hidden for now
         {userFlight && (
           <button
             onClick={() => setShowSearchModal(true)}
@@ -139,6 +140,7 @@ export default function FlightsSection() {
             Find Round-Trip Flights
           </button>
         )}
+        */}
         <div className="flex rounded-lg border border-[var(--border)]">
           <button
             onClick={() => setView("table")}
@@ -414,6 +416,7 @@ export default function FlightsSection() {
         </div>
       )}
 
+      {/* Flight search modal hidden for now
       {userFlight && (
         <FlightSearchModal
           open={showSearchModal}
@@ -425,6 +428,7 @@ export default function FlightsSection() {
           }}
         />
       )}
+      */}
     </section>
   );
 }
