@@ -198,6 +198,20 @@ CREATE INDEX IF NOT EXISTS idx_restaurant_votes_restaurant ON restaurant_votes(r
 CREATE INDEX IF NOT EXISTS idx_restaurant_votes_user ON restaurant_votes(user_id);
 
 -- ============================================
+-- 13. RESTAURANT COMMENTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS restaurant_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id uuid NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_restaurant_comments_entity ON restaurant_comments(entity_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_comments_user ON restaurant_comments(user_id);
+
+-- ============================================
 -- UPDATED_AT TRIGGER
 -- ============================================
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -248,9 +262,11 @@ CREATE POLICY "Public read gallery_photos" ON gallery_photos FOR SELECT USING (t
 
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE restaurant_votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_comments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public read restaurants" ON restaurants FOR SELECT USING (true);
 CREATE POLICY "Public read restaurant_votes" ON restaurant_votes FOR SELECT USING (true);
+CREATE POLICY "Public read restaurant_comments" ON restaurant_comments FOR SELECT USING (true);
 
 -- Note: All mutations go through API routes using the service role key,
 -- so no INSERT/UPDATE/DELETE policies are needed for anon.

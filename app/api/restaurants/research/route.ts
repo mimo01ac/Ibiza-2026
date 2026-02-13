@@ -14,9 +14,9 @@ export async function POST(req: NextRequest) {
   try {
     await getSessionOrThrow();
 
-    const { url } = await req.json();
-    if (!url || typeof url !== "string") {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    const { name, url } = await req.json();
+    if (!name || typeof name !== "string") {
+      return NextResponse.json({ error: "Restaurant name is required" }, { status: 400 });
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    const query = url
+      ? `Research this restaurant: "${name}" — website: ${url}`
+      : `Research this restaurant in Ibiza, Spain: "${name}"`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -44,15 +48,15 @@ export async function POST(req: NextRequest) {
             max_uses: 5,
           },
         ],
-        system: `You are a restaurant research assistant. When given a restaurant URL or name, use web search to find information about it. Always respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation).`,
+        system: `You are a restaurant research assistant. When given a restaurant name (and optionally a URL), use web search to find information about it. The restaurant is likely in Ibiza, Spain unless the context suggests otherwise. Always respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation).`,
         messages: [
           {
             role: "user",
-            content: `Research this restaurant: ${url}
+            content: `${query}
 
 Find the following and return as a JSON object:
 {
-  "name": "Restaurant Name",
+  "name": "Full Restaurant Name",
   "cuisine_type": "e.g. Mediterranean, Asian Fusion, Seafood",
   "description": "1-2 enticing sentences about the vibe and food",
   "tripadvisor_rating": 4.5,
@@ -61,6 +65,7 @@ Find the following and return as a JSON object:
 }
 
 Rules:
+- name: use the official full name of the restaurant
 - tripadvisor_rating: a number like 4.5, or null if not found
 - tripadvisor_url: the direct TripAdvisor review page URL, or null
 - image_url: a publicly accessible image URL of the restaurant (from their website, Google, or review sites), or null

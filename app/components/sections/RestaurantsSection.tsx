@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import PageHeader from "../PageHeader";
 import VoteButton from "../VoteButton";
 import VoterAvatars from "../VoterAvatars";
+import CommentSection from "../CommentSection";
 import type { RestaurantWithVotes } from "@/lib/types/database";
 
 /* ── Cuisine type icons (emoji shorthand) ── */
@@ -184,17 +185,24 @@ function RestaurantCard({
             </a>
           )}
         </div>
+
+        {/* Comments */}
+        <CommentSection
+          entityId={restaurant.id}
+          apiEndpoint="/api/restaurants"
+        />
       </div>
     </div>
   );
 }
 
-/* ── Add Restaurant Form ── */
+/* ── Add Restaurant Form (available to all users) ── */
 function AddRestaurantForm({
   onAdded,
 }: {
   onAdded: () => void;
 }) {
+  const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [researching, setResearching] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -210,7 +218,7 @@ function AddRestaurantForm({
 
   const handleResearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (!name.trim()) return;
 
     setResearching(true);
     setError("");
@@ -220,7 +228,10 @@ function AddRestaurantForm({
       const res = await fetch("/api/restaurants/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          url: url.trim() || undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -247,11 +258,12 @@ function AddRestaurantForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...preview,
-          website_url: url.trim(),
+          website_url: url.trim() || null,
         }),
       });
 
       if (res.ok) {
+        setName("");
         setUrl("");
         setPreview(null);
         onAdded();
@@ -269,34 +281,43 @@ function AddRestaurantForm({
   return (
     <div className="mb-8 rounded-xl border border-[var(--border)] bg-surface p-5">
       <h3 className="mb-3 text-sm font-semibold text-foreground">
-        Add a Restaurant
+        Suggest a Restaurant
       </h3>
-      <form onSubmit={handleResearch} className="flex gap-3">
+      <form onSubmit={handleResearch} className="space-y-3">
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Restaurant name *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="flex-1 rounded-lg border border-[var(--border)] bg-background px-4 py-2.5 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-yellow transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={researching || !name.trim()}
+            className="shrink-0 rounded-lg bg-neon-yellow/90 px-5 py-2.5 text-sm font-semibold text-background transition-all hover:bg-neon-yellow disabled:opacity-50"
+          >
+            {researching ? (
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Researching...
+              </span>
+            ) : (
+              "Research with AI"
+            )}
+          </button>
+        </div>
         <input
           type="url"
-          placeholder="Paste restaurant website URL..."
+          placeholder="Website URL (optional)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          required
-          className="flex-1 rounded-lg border border-[var(--border)] bg-background px-4 py-2.5 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-yellow transition-colors"
+          className="w-full rounded-lg border border-[var(--border)] bg-background px-4 py-2.5 text-sm text-foreground placeholder-gray-600 outline-none focus:border-neon-yellow transition-colors"
         />
-        <button
-          type="submit"
-          disabled={researching}
-          className="shrink-0 rounded-lg bg-neon-yellow/90 px-5 py-2.5 text-sm font-semibold text-background transition-all hover:bg-neon-yellow disabled:opacity-50"
-        >
-          {researching ? (
-            <span className="flex items-center gap-2">
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Researching...
-            </span>
-          ) : (
-            "Research with AI"
-          )}
-        </button>
       </form>
 
       {error && (
@@ -436,7 +457,6 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
   const [restaurants, setRestaurants] = useState<RestaurantWithVotes[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
-  const [seeding, setSeeding] = useState(false);
 
   const fetchRestaurants = async () => {
     try {
@@ -461,20 +481,6 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
     }
   };
 
-  const handleSeed = async () => {
-    setSeeding(true);
-    try {
-      const res = await fetch("/api/restaurants/seed", { method: "POST" });
-      if (res.ok) {
-        fetchRestaurants();
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   // Sort by vote count descending
   const sorted = [...restaurants].sort((a, b) => b.vote_count - a.vote_count);
 
@@ -486,28 +492,17 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
         color="yellow"
       />
 
-      {/* Admin actions */}
-      {isAdmin && (
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="rounded-lg border border-neon-yellow bg-neon-yellow/10 px-4 py-2 text-sm font-semibold text-neon-yellow transition-colors hover:bg-neon-yellow/20"
-          >
-            {showForm ? "Cancel" : "+ Add Restaurant"}
-          </button>
-          {restaurants.length === 0 && (
-            <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-gray-400 transition-colors hover:text-neon-yellow disabled:opacity-50"
-            >
-              {seeding ? "Seeding..." : "Seed Sample Data"}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Add restaurant — available to all users */}
+      <div className="mb-6 text-center">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="rounded-lg border border-neon-yellow bg-neon-yellow/10 px-4 py-2 text-sm font-semibold text-neon-yellow transition-colors hover:bg-neon-yellow/20"
+        >
+          {showForm ? "Cancel" : "+ Suggest a Restaurant"}
+        </button>
+      </div>
 
-      {showForm && <AddRestaurantForm onAdded={fetchRestaurants} />}
+      {showForm && <AddRestaurantForm onAdded={() => { fetchRestaurants(); setShowForm(false); }} />}
 
       {/* Desktop Grid */}
       {sorted.length > 0 && (
@@ -536,7 +531,7 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
 
       {restaurants.length === 0 && !showForm && (
         <p className="text-center text-sm text-gray-600">
-          No restaurants added yet.{isAdmin ? " Click the button above to get started!" : ""}
+          No restaurants added yet. Be the first to suggest one!
         </p>
       )}
     </section>
