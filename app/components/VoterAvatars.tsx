@@ -12,7 +12,7 @@ interface Voter {
 
 interface VoterAvatarsProps {
   entityId: string;
-  entityType: "events" | "wildcards";
+  entityType: "events" | "wildcards" | "restaurants" | "grocery";
   voteCount: number;
 }
 

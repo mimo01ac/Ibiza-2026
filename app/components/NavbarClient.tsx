@@ -7,6 +7,8 @@ import ProfileDropdown from "./ProfileDropdown";
 const NAV_LINKS = [
   { label: "Events", href: "#wildcards" },
   { label: "Schedule", href: "#schedule" },
+  { label: "Food", href: "#restaurants" },
+  { label: "Shopping", href: "#grocery" },
   { label: "DJ", href: "#dj" },
   { label: "Flights", href: "#flights" },
   { label: "Rooms", href: "#rooms" },

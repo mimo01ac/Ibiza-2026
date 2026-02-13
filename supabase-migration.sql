@@ -166,6 +166,38 @@ CREATE INDEX IF NOT EXISTS idx_gallery_category ON gallery_photos(category);
 CREATE INDEX IF NOT EXISTS idx_gallery_uploaded_by ON gallery_photos(uploaded_by);
 
 -- ============================================
+-- 11. RESTAURANTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS restaurants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  website_url text,
+  image_url text,
+  cuisine_type text,
+  description text,
+  tripadvisor_rating numeric(2,1),
+  tripadvisor_url text,
+  created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_restaurants_created_by ON restaurants(created_by);
+
+-- ============================================
+-- 12. RESTAURANT VOTES TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS restaurant_votes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id uuid NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(restaurant_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_restaurant_votes_restaurant ON restaurant_votes(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_votes_user ON restaurant_votes(user_id);
+
+-- ============================================
 -- UPDATED_AT TRIGGER
 -- ============================================
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -213,6 +245,12 @@ CREATE POLICY "Public read wildcard_comments" ON wildcard_comments FOR SELECT US
 CREATE POLICY "Public read flights" ON flights FOR SELECT USING (true);
 CREATE POLICY "Public read room_allocations" ON room_allocations FOR SELECT USING (true);
 CREATE POLICY "Public read gallery_photos" ON gallery_photos FOR SELECT USING (true);
+
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_votes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read restaurants" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "Public read restaurant_votes" ON restaurant_votes FOR SELECT USING (true);
 
 -- Note: All mutations go through API routes using the service role key,
 -- so no INSERT/UPDATE/DELETE policies are needed for anon.

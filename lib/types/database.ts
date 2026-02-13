@@ -94,3 +94,41 @@ export interface GalleryPhoto {
   created_at: string;
   profile?: Profile;
 }
+
+export interface Restaurant {
+  id: string;
+  name: string;
+  website_url: string | null;
+  image_url: string | null;
+  cuisine_type: string | null;
+  description: string | null;
+  tripadvisor_rating: number | null;
+  tripadvisor_url: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface RestaurantWithVotes extends Restaurant {
+  vote_count: number;
+  user_voted: boolean;
+}
+
+export type GroceryCategory = "food_snacks" | "drinks" | "other";
+
+export interface GroceryItem {
+  id: string;
+  name: string;
+  category: GroceryCategory;
+  quantity: number;
+  is_purchased: boolean;
+  added_by: string;
+  purchased_by: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: Profile;
+}
+
+export interface GroceryItemWithVotes extends GroceryItem {
+  vote_count: number;
+  user_voted: boolean;
+}
