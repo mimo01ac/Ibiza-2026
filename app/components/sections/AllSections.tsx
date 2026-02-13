@@ -21,8 +21,8 @@ export default function AllSections({ isAdmin }: AllSectionsProps) {
       <DisplayNameModal />
       <WildcardsSection />
       <RestaurantsSection isAdmin={isAdmin} />
-      <GrocerySection />
       <FlightsSection />
+      <GrocerySection />
       <DjSection isAdmin={isAdmin} />
       <RoomsSection isAdmin={isAdmin} />
       <GallerySection />
