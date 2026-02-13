@@ -68,7 +68,7 @@ Rules:
 - name: use the official full name of the restaurant
 - tripadvisor_rating: a number like 4.5, or null if not found
 - tripadvisor_url: the direct TripAdvisor review page URL, or null
-- image_url: a publicly accessible image URL of the restaurant (from their website, Google, or review sites), or null
+- image_url: a direct image file URL ending in .jpg/.jpeg/.png/.webp (NOT a webpage URL), or null if no direct image URL is found
 - description: focus on vibe, ambiance, and food style — make it sound appealing
 - Return ONLY the JSON object`,
           },

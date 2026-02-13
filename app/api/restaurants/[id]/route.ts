@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionOrThrow, requireAdmin } from "@/lib/auth-helpers";
+import { getSessionOrThrow, getProfileByEmail } from "@/lib/auth-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function DELETE(
@@ -9,7 +9,11 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getSessionOrThrow();
-    await requireAdmin(session.user!.email!);
+    await getProfileByEmail(
+      session.user!.email!,
+      session.user!.name,
+      session.user!.image
+    );
 
     const supabase = createAdminClient();
     await supabase.from("restaurants").delete().eq("id", id);

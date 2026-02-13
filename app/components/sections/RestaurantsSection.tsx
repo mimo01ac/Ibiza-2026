@@ -5,6 +5,7 @@ import PageHeader from "../PageHeader";
 import VoteButton from "../VoteButton";
 import VoterAvatars from "../VoterAvatars";
 import CommentSection from "../CommentSection";
+import Modal from "../Modal";
 import type { RestaurantWithVotes } from "@/lib/types/database";
 
 /* ── Cuisine type icons (emoji shorthand) ── */
@@ -85,27 +86,38 @@ function TripAdvisorBadge({ rating, url }: { rating: number | null; url: string 
   return badge;
 }
 
+/* ── Helper: check if URL is an actual image ── */
+function isImageUrl(url: string | null): boolean {
+  if (!url) return false;
+  return /\.(jpe?g|png|webp|gif|avif|svg)/i.test(url);
+}
+
 /* ── Restaurant Card ── */
 function RestaurantCard({
   restaurant,
-  isAdmin,
   onDelete,
+  onSelect,
   voteCounts,
   setVoteCounts,
 }: {
   restaurant: RestaurantWithVotes;
-  isAdmin: boolean;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  onSelect: (r: RestaurantWithVotes) => void;
   voteCounts: Record<string, number>;
   setVoteCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }) {
+  const hasImage = isImageUrl(restaurant.image_url);
+
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-surface transition-all hover:border-neon-yellow/30">
+    <div
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-surface transition-all hover:border-neon-yellow/30"
+      onClick={() => onSelect(restaurant)}
+    >
       {/* Background image */}
       <div className="relative h-44 w-full overflow-hidden">
-        {restaurant.image_url ? (
+        {hasImage ? (
           <img
-            src={restaurant.image_url}
+            src={restaurant.image_url!}
             alt={restaurant.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -124,17 +136,15 @@ function RestaurantCard({
           </div>
         )}
 
-        {/* Admin delete */}
-        {isAdmin && (
-          <button
-            onClick={() => onDelete(restaurant.id)}
-            className="absolute left-3 top-3 rounded-full bg-background/80 p-1.5 text-gray-500 backdrop-blur-sm transition-colors hover:text-red-400"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
+        {/* Delete button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(restaurant.id, restaurant.name); }}
+          className="absolute left-3 top-3 rounded-full bg-background/80 p-1.5 text-gray-500 backdrop-blur-sm transition-colors hover:text-red-400 opacity-0 group-hover:opacity-100"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
       </div>
 
       {/* Content */}
@@ -145,7 +155,7 @@ function RestaurantCard({
         </h3>
 
         {/* TripAdvisor rating */}
-        <TripAdvisorBadge rating={restaurant.tripadvisor_rating} url={restaurant.tripadvisor_url} />
+        <TripAdvisorBadge rating={restaurant.tripadvisor_rating} url={null} />
 
         {/* Description */}
         {restaurant.description && (
@@ -158,7 +168,7 @@ function RestaurantCard({
         <div className="flex-1" />
 
         {/* Actions row */}
-        <div className="flex items-center gap-2 border-t border-[var(--border)] pt-3">
+        <div className="flex items-center gap-2 border-t border-[var(--border)] pt-3" onClick={(e) => e.stopPropagation()}>
           <VoteButton
             entityId={restaurant.id}
             initialCount={restaurant.vote_count}
@@ -173,26 +183,161 @@ function RestaurantCard({
             entityType="restaurants"
             voteCount={voteCounts[restaurant.id] ?? restaurant.vote_count}
           />
-
-          {restaurant.tripadvisor_url && (
-            <a
-              href={restaurant.tripadvisor_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto rounded-lg border border-emerald-500/30 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/10"
-            >
-              View Reviews
-            </a>
-          )}
         </div>
-
-        {/* Comments */}
-        <CommentSection
-          entityId={restaurant.id}
-          apiEndpoint="/api/restaurants"
-        />
       </div>
     </div>
+  );
+}
+
+/* ── Restaurant Detail Modal ── */
+function RestaurantDetail({
+  restaurant,
+  onClose,
+  onDelete,
+  voteCounts,
+  setVoteCounts,
+}: {
+  restaurant: RestaurantWithVotes;
+  onClose: () => void;
+  onDelete: (id: string, name: string) => void;
+  voteCounts: Record<string, number>;
+  setVoteCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+}) {
+  const hasImage = isImageUrl(restaurant.image_url);
+
+  return (
+    <Modal open onClose={onClose}>
+      <div className="w-[90vw] max-w-lg overflow-hidden rounded-2xl border border-[var(--border)] bg-surface">
+        {/* Image header */}
+        {hasImage ? (
+          <div className="relative h-52 w-full">
+            <img
+              src={restaurant.image_url!}
+              alt={restaurant.name}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+          </div>
+        ) : (
+          <div className="flex h-32 w-full items-center justify-center bg-gradient-to-br from-surface to-background">
+            <span className="text-5xl opacity-30">{getCuisineIcon(restaurant.cuisine_type)}</span>
+          </div>
+        )}
+
+        {/* Body */}
+        <div className="p-5">
+          {/* Title + cuisine */}
+          <h3 className="text-xl font-bold text-foreground">{restaurant.name}</h3>
+          {restaurant.cuisine_type && (
+            <p className="mt-1 text-xs text-neon-yellow">
+              {getCuisineIcon(restaurant.cuisine_type)} {restaurant.cuisine_type}
+            </p>
+          )}
+
+          {/* TripAdvisor rating */}
+          {restaurant.tripadvisor_rating && (
+            <div className="mt-2">
+              <TripAdvisorBadge rating={restaurant.tripadvisor_rating} url={null} />
+            </div>
+          )}
+
+          {/* Full description */}
+          {restaurant.description && (
+            <p className="mt-3 text-sm leading-relaxed text-gray-400">
+              {restaurant.description}
+            </p>
+          )}
+
+          {/* Links */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {restaurant.website_url && (
+              <a
+                href={restaurant.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-neon-yellow/30 px-3 py-2 text-xs font-semibold text-neon-yellow transition-colors hover:bg-neon-yellow/10"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Visit Website
+              </a>
+            )}
+            {restaurant.tripadvisor_url && (
+              <a
+                href={restaurant.tripadvisor_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/10"
+              >
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="#34E0A1" fillOpacity="0.15" />
+                  <circle cx="12" cy="12" r="5" fill="#34E0A1" />
+                </svg>
+                TripAdvisor Reviews
+              </a>
+            )}
+          </div>
+
+          {/* Map */}
+          <div className="mt-4 overflow-hidden rounded-lg border border-[var(--border)]">
+            <iframe
+              title={`Map of ${restaurant.name}`}
+              width="100%"
+              height="200"
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(restaurant.name + ", Ibiza, Spain")}&output=embed`}
+            />
+            <a
+              href={`https://www.google.com/maps/dir/${encodeURIComponent("Carrer del Olivo 50, Can Furnet, Ibiza")}/${encodeURIComponent(restaurant.name + ", Ibiza, Spain")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 bg-background/50 px-3 py-2 text-xs font-medium text-gray-400 transition-colors hover:text-neon-cyan"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Get Directions from Villa
+            </a>
+          </div>
+
+          {/* Vote + voters + delete */}
+          <div className="mt-4 flex items-center gap-2 border-t border-[var(--border)] pt-4">
+            <VoteButton
+              entityId={restaurant.id}
+              initialCount={restaurant.vote_count}
+              initialVoted={restaurant.user_voted}
+              apiEndpoint="/api/restaurants"
+              onVoteChange={(count) =>
+                setVoteCounts((prev) => ({ ...prev, [restaurant.id]: count }))
+              }
+            />
+            <VoterAvatars
+              entityId={restaurant.id}
+              entityType="restaurants"
+              voteCount={voteCounts[restaurant.id] ?? restaurant.vote_count}
+            />
+            <button
+              onClick={() => { onClose(); onDelete(restaurant.id, restaurant.name); }}
+              className="ml-auto rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/10"
+            >
+              Delete
+            </button>
+          </div>
+
+          {/* Comments */}
+          <div className="mt-3">
+            <CommentSection
+              entityId={restaurant.id}
+              apiEndpoint="/api/restaurants"
+            />
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -376,14 +521,14 @@ function AddRestaurantForm({
 /* ── Mobile Carousel ── */
 function MobileCarousel({
   restaurants,
-  isAdmin,
   onDelete,
+  onSelect,
   voteCounts,
   setVoteCounts,
 }: {
   restaurants: RestaurantWithVotes[];
-  isAdmin: boolean;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  onSelect: (r: RestaurantWithVotes) => void;
   voteCounts: Record<string, number>;
   setVoteCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }) {
@@ -421,8 +566,8 @@ function MobileCarousel({
           >
             <RestaurantCard
               restaurant={r}
-              isAdmin={isAdmin}
               onDelete={onDelete}
+              onSelect={onSelect}
               voteCounts={voteCounts}
               setVoteCounts={setVoteCounts}
             />
@@ -453,10 +598,13 @@ interface RestaurantsSectionProps {
   isAdmin: boolean;
 }
 
-export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps) {
+export default function RestaurantsSection({ isAdmin: _isAdmin }: RestaurantsSectionProps) {
   const [restaurants, setRestaurants] = useState<RestaurantWithVotes[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+  const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantWithVotes | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchRestaurants = async () => {
     try {
@@ -472,12 +620,21 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
     fetchRestaurants();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteRequest = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await fetch(`/api/restaurants/${id}`, { method: "DELETE" });
+      await fetch(`/api/restaurants/${deleteTarget.id}`, { method: "DELETE" });
       fetchRestaurants();
     } catch {
       // ignore
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -511,8 +668,8 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
             <RestaurantCard
               key={r.id}
               restaurant={r}
-              isAdmin={isAdmin}
-              onDelete={handleDelete}
+              onDelete={handleDeleteRequest}
+              onSelect={setSelectedRestaurant}
               voteCounts={voteCounts}
               setVoteCounts={setVoteCounts}
             />
@@ -523,8 +680,8 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
       {/* Mobile Carousel */}
       <MobileCarousel
         restaurants={sorted}
-        isAdmin={isAdmin}
-        onDelete={handleDelete}
+        onDelete={handleDeleteRequest}
+        onSelect={setSelectedRestaurant}
         voteCounts={voteCounts}
         setVoteCounts={setVoteCounts}
       />
@@ -534,6 +691,42 @@ export default function RestaurantsSection({ isAdmin }: RestaurantsSectionProps)
           No restaurants added yet. Be the first to suggest one!
         </p>
       )}
+
+      {/* Restaurant detail modal */}
+      {selectedRestaurant && (
+        <RestaurantDetail
+          restaurant={selectedRestaurant}
+          onClose={() => setSelectedRestaurant(null)}
+          onDelete={handleDeleteRequest}
+          voteCounts={voteCounts}
+          setVoteCounts={setVoteCounts}
+        />
+      )}
+
+      {/* Delete confirmation modal */}
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <div className="w-80 rounded-xl border border-[var(--border)] bg-surface p-6">
+          <h3 className="text-base font-bold text-foreground">Delete restaurant?</h3>
+          <p className="mt-2 text-sm text-gray-400">
+            Are you sure you want to remove <span className="font-semibold text-foreground">{deleteTarget?.name}</span> from the list? This cannot be undone.
+          </p>
+          <div className="mt-5 flex gap-3">
+            <button
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="flex-1 rounded-lg bg-red-500/90 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="flex-1 rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-gray-400 transition-colors hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
