@@ -97,14 +97,15 @@ export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipants
   };
 
   return (
-    <div className="relative z-10 mx-auto mb-16 max-w-4xl text-center">
-      {/* Section divider */}
-      <div className="mb-8 flex items-center justify-center gap-4">
-        <div className="h-px w-16 bg-gradient-to-r from-transparent to-neon-purple/50" />
-        <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-neon-purple">
-          Confirmed Participants
+    <section className="relative z-10 mx-auto max-w-4xl py-16 text-center">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-extrabold tracking-tight text-neon-purple text-glow-purple sm:text-4xl">
+          CONFIRMED
         </h2>
-        <div className="h-px w-16 bg-gradient-to-l from-transparent to-neon-purple/50" />
+        <p className="mt-2 text-sm text-gray-400">
+          Who&apos;s in for the trip of a lifetime?
+        </p>
+        <div className="mx-auto mt-4 h-px w-32 bg-gradient-to-r from-transparent via-neon-purple to-transparent" />
       </div>
 
       {/* Avatar grid */}
@@ -179,6 +180,6 @@ export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipants
           {loading ? "..." : "I'm in!"}
         </button>
       )}
-    </div>
+    </section>
   );
 }
