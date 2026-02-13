@@ -20,7 +20,6 @@ export default function AllSections({ isAdmin }: AllSectionsProps) {
     <>
       <DisplayNameModal />
       <WildcardsSection />
-      <ScheduleSection isAdmin={isAdmin} />
       <RestaurantsSection isAdmin={isAdmin} />
       <GrocerySection />
       <DjSection isAdmin={isAdmin} />
@@ -28,6 +27,7 @@ export default function AllSections({ isAdmin }: AllSectionsProps) {
       <RoomsSection isAdmin={isAdmin} />
       <GallerySection />
       <VillaSection />
+      {isAdmin && <ScheduleSection isAdmin={isAdmin} />}
     </>
   );
 }

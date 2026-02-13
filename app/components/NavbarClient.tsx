@@ -6,12 +6,12 @@ import ProfileDropdown from "./ProfileDropdown";
 
 const NAV_LINKS = [
   { label: "Events", href: "#wildcards" },
-  { label: "Schedule", href: "#schedule" },
+  { label: "Schedule", href: "#schedule", adminOnly: true },
   { label: "Food", href: "#restaurants" },
   { label: "Shopping", href: "#grocery" },
   { label: "DJ", href: "#dj" },
   { label: "Flights", href: "#flights" },
-  { label: "Rooms", href: "#rooms" },
+  { label: "Rooms", href: "#rooms", adminOnly: true },
   { label: "Gallery", href: "#gallery" },
   { label: "Villa", href: "#villa" },
 ];
@@ -24,7 +24,7 @@ interface NavbarClientProps {
   isAdmin: boolean;
 }
 
-export default function NavbarClient({ user, isAdmin: _isAdmin }: NavbarClientProps) {
+export default function NavbarClient({ user, isAdmin }: NavbarClientProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleNavClick = (href: string) => {
@@ -48,7 +48,7 @@ export default function NavbarClient({ user, isAdmin: _isAdmin }: NavbarClientPr
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {NAV_LINKS.filter((l) => !l.adminOnly || isAdmin).map((link) => (
             <button
               key={link.href}
               onClick={() => handleNavClick(link.href)}
@@ -88,7 +88,7 @@ export default function NavbarClient({ user, isAdmin: _isAdmin }: NavbarClientPr
       {menuOpen && (
         <div className="border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-md md:hidden">
           <div className="mx-auto max-w-6xl space-y-1 px-4 py-3">
-            {NAV_LINKS.map((link) => (
+            {NAV_LINKS.filter((l) => !l.adminOnly || isAdmin).map((link) => (
               <button
                 key={link.href}
                 onClick={() => handleNavClick(link.href)}

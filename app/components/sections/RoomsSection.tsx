@@ -79,6 +79,8 @@ export default function RoomsSection({ isAdmin }: RoomsSectionProps) {
   // Users already assigned to any room
   const assignedUserIds = new Set(rooms.flatMap((r) => r.profiles.map((p) => p.id)));
 
+  if (!isAdmin) return null;
+
   return (
     <section id="rooms" className="scroll-mt-20 py-16">
       <PageHeader title="ROOM ALLOCATION" subtitle="Who sleeps where?" color="purple" />
