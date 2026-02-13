@@ -69,9 +69,35 @@ export interface Flight {
   flight_number_in: string | null;
   flight_number_out: string | null;
   notes: string | null;
+  booked: boolean;
   created_at: string;
   updated_at: string;
   profile?: Profile;
+}
+
+export interface FlightLeg {
+  airline: string;
+  flight_number: string;
+  departure_airport: string;
+  arrival_airport: string;
+  departure_time: string;
+  arrival_time: string;
+  duration: string;
+  stops: number;
+  stop_cities?: string[];
+}
+
+export interface TripPackage {
+  outbound: FlightLeg;
+  inbound: FlightLeg;
+  price_eur: number;
+  booking_url?: string;
+}
+
+export interface FlightSearchResponse {
+  packages: TripPackage[];
+  data_freshness: string;
+  search_summary: string;
 }
 
 export interface RoomAllocation {

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import PageHeader from "../PageHeader";
 import UserAvatar from "../UserAvatar";
 import { useToast } from "../Toast";
+import FlightSearchModal from "../FlightSearchModal";
 import type { Flight } from "@/lib/types/database";
 
 const TRIP_START = "2026-06-25";
@@ -21,9 +23,11 @@ const COLORS = [
 ];
 
 export default function FlightsSection() {
+  const { data: session } = useSession();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [view, setView] = useState<"table" | "timeline">("table");
   const [showForm, setShowForm] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     arrival_date: "",
@@ -35,6 +39,10 @@ export default function FlightsSection() {
     notes: "",
   });
   const toast = useToast();
+
+  const userFlight = flights.find(
+    (f) => f.profile?.auth_user_email === session?.user?.email
+  );
 
   useEffect(() => {
     fetchFlights();
@@ -107,6 +115,17 @@ export default function FlightsSection() {
         >
           {showForm ? "Cancel" : "Add / Edit My Flight"}
         </button>
+        {userFlight && (
+          <button
+            onClick={() => setShowSearchModal(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-neon-purple bg-neon-purple/10 px-4 py-2 text-sm font-semibold text-neon-purple transition-colors hover:bg-neon-purple/20"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Find Round-Trip Flights
+          </button>
+        )}
         <div className="flex rounded-lg border border-[var(--border)]">
           <button
             onClick={() => setView("table")}
@@ -217,6 +236,11 @@ export default function FlightsSection() {
                   <p className="font-semibold text-neon-cyan">
                     {f.profile?.display_name ?? "Unknown"}
                   </p>
+                  {f.booked && (
+                    <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
+                      Booked
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
@@ -273,6 +297,7 @@ export default function FlightsSection() {
                   <th className="px-4 py-3 text-gray-500">Departure</th>
                   <th className="px-4 py-3 text-gray-500">Flight In</th>
                   <th className="px-4 py-3 text-gray-500">Flight Out</th>
+                  <th className="px-4 py-3 text-gray-500">Status</th>
                   <th className="px-4 py-3 text-gray-500">Notes</th>
                 </tr>
               </thead>
@@ -299,12 +324,21 @@ export default function FlightsSection() {
                     </td>
                     <td className="px-4 py-3 text-gray-400">{f.flight_number_in ?? "—"}</td>
                     <td className="px-4 py-3 text-gray-400">{f.flight_number_out ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {f.booked ? (
+                        <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
+                          Booked
+                        </span>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-500">{f.notes ?? "—"}</td>
                   </tr>
                 ))}
                 {flights.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
                       No flights added yet.
                     </td>
                   </tr>
@@ -365,6 +399,18 @@ export default function FlightsSection() {
             </div>
           </div>
         </div>
+      )}
+
+      {userFlight && (
+        <FlightSearchModal
+          open={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          userFlight={userFlight}
+          onBooked={() => {
+            fetchFlights();
+            toast.success("Flight marked as booked!");
+          }}
+        />
       )}
     </section>
   );

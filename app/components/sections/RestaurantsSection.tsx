@@ -227,19 +227,23 @@ function RestaurantDetail({
   restaurant,
   onClose,
   onDelete,
+  onPrev,
+  onNext,
   voteCounts,
   setVoteCounts,
 }: {
   restaurant: RestaurantWithVotes;
   onClose: () => void;
   onDelete: (id: string, name: string) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
   voteCounts: Record<string, number>;
   setVoteCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }) {
   const hasImage = isImageUrl(restaurant.image_url);
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} onPrev={onPrev} onNext={onNext}>
       <div className="w-[90vw] max-w-lg overflow-hidden rounded-2xl border border-[var(--border)] bg-surface">
         {/* Image header */}
         {hasImage ? (
@@ -733,6 +737,22 @@ export default function RestaurantsSection({ isAdmin: _isAdmin }: RestaurantsSec
           restaurant={selectedRestaurant}
           onClose={() => setSelectedRestaurant(null)}
           onDelete={handleDeleteRequest}
+          onPrev={
+            sorted.length > 1
+              ? () => {
+                  const idx = sorted.findIndex((r) => r.id === selectedRestaurant.id);
+                  setSelectedRestaurant(sorted[(idx - 1 + sorted.length) % sorted.length]);
+                }
+              : undefined
+          }
+          onNext={
+            sorted.length > 1
+              ? () => {
+                  const idx = sorted.findIndex((r) => r.id === selectedRestaurant.id);
+                  setSelectedRestaurant(sorted[(idx + 1) % sorted.length]);
+                }
+              : undefined
+          }
           voteCounts={voteCounts}
           setVoteCounts={setVoteCounts}
         />
