@@ -115,14 +115,14 @@ export default function ConfirmedParticipants({ isAdmin }: ConfirmedParticipants
             const isMe = session?.user?.email && myProfileId === p.id;
             return (
               <div key={p.id} className="group relative flex flex-col items-center gap-2">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-neon-pink/50 shadow-[0_0_15px_rgba(255,16,240,0.2)]">
+                <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-neon-pink/50 shadow-[0_0_15px_rgba(255,16,240,0.2)]">
                   {p.avatar_url ? (
                     <Image
                       src={p.avatar_url}
                       alt={p.display_name}
                       fill
                       className="object-cover"
-                      sizes="64px"
+                      sizes="80px"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gray-800 text-lg font-bold text-neon-pink">
